@@ -31,8 +31,7 @@ def train_epoch(model, train_dataset, optimizer, loss_func):
         optimizer.zero_grad()
         images, masks = batch
         out = model(images)
-        out = out['out']
-        pdb.set_trace()
+        out = torch.sigmoid(out['out'])
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()
         optimizer.step() #Weights are updated
