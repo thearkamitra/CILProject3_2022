@@ -6,6 +6,7 @@ import torch.nn as nn
 from albumentations.pytorch import ToTensorV2
 from torchvision.models.segmentation import fcn_resnet50
 import pdb
+import torch
 from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
@@ -34,6 +35,7 @@ test_transform = Alb.Compose(
         ]
     )
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 dataset = RoadCIL("training", training=True, transform=train_transform)
 test_dataset = RoadCIL("test", training=False, transform=test_transform)
@@ -50,9 +52,10 @@ if model_name == "fcn_res":
     model = fcn_resnet50(pretrained=True)
     model.classifier[4] = nn.Conv2d(512, 1, kernel_size = (1,1), stride = (1,1))
     model.aux_classifier[4]= nn.Conv2d(256, 1, kernel_size = (1,1), stride = (1,1))
+    model = model.to(device)
 loss = nn.BCELoss()
 optimizer = Adam(model.parameters(), 1e-4)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
-train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler)
+train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device= device)
 
 test(model, test_dataset,  loss, )
