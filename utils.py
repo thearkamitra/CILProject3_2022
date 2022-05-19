@@ -34,7 +34,7 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device):
         images = images.to(device)
         masks = masks.to(device)
         out = model(images)
-        out = torch.sigmoid(out['out'])
+        out = torch.sigmoid(out)
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()
         optimizer.step() #Weights are updated
@@ -54,7 +54,7 @@ def val_epoch(model, val_dataset, loss_func, device):
             images = images.to(device)
             masks = masks.to(device)
             out = model(images)
-            out = torch.sigmoid(out['out'])
+            out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
             loss_val+= loss 
     return loss_val
