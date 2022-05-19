@@ -13,6 +13,7 @@ from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
 from models import FCN_res
+import argparse
 
 train_transform = Alb.Compose(
         [
@@ -39,7 +40,16 @@ test_transform = Alb.Compose(
         ]
     )
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e","--epochs",type=int, default=20)
+    parser.add_argument("-b","--batch",type = int, default=64)
+    parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
+    parser.add_argument("--lr",type=float, default=1e-4)
+    parser.add_argument("-p","--modeltoload",type=str, default="")
+    parser.add_argument("--model",type=str, default="fcn_res")
+
+    args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataset = RoadCIL("training", training=True, transform=train_transform)
@@ -48,27 +58,29 @@ if __name__ == "__main__":
     validation_length = int(2*len(dataset)//10)
     train_dataset, validation_dataset = random_split(dataset, [(len(dataset) - validation_length), validation_length])
 
-    batch_size = 4
+    batch_size = args.batch
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     model_name = "fcn_res"
     if model_name == "fcn_res":
         model = FCN_res(n_classes = 1)
         model = model.to(device)
     loss = nn.BCELoss()
-    optimizer = Adam(model.parameters(), 1e-4)
+    optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
-    if (not(("--no-train" in sys.argv[1:]))):
-        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device)
+    if args.cmd=="train":
+        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, epochs=args.epochs)
 
-    if (not(("--no-test" in sys.argv[1:]))):
-        model.load_state_dict(torch.load("First_check.pth")['model_state_dict'])
-        for _idx,(fname,image) in enumerate(test_dataset):
-            image = torch.reshape(image, [1,3,400,400])
-            with torch.no_grad():
-                score = model(image)['out']
-            out = torch.reshape(torch.sigmoid(score), (400,400)).numpy()
-            out = np.around(out)
-            plt.imsave('test/predictions/' + fname, out)
+    if args.cmd=="test":
+        if args.modeltoload =="":
+            print("No model file selected. Taking the default one.")
+            args.modeltoload = "First_check.pth"
+        model.load_state_dict(torch.load(args.modeltoload)['model_state_dict'])
+        model = model.to(device)
+        test(model, test_dataloader, device)
+
+
+if __name__ == "__main__":
+    main()

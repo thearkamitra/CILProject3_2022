@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import pdb
 from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
             epochs=4, model_name = "First_check.pth", device = torch.device("cpu")):
     loss_val_min = torch.tensor(1e10)
@@ -59,5 +61,12 @@ def val_epoch(model, val_dataset, loss_func, device):
             loss_val+= loss 
     return loss_val
 
-def test(model, test_dataset,  loss, ):
-    pass
+def test(model, test_dataloader, device):
+    model.eval()
+    with torch.no_grad():
+        for _idx,(fname,image) in enumerate(tqdm(test_dataloader)):
+            image = image.to(device)
+            score = model(image)
+            out = torch.reshape(torch.sigmoid(score).cpu(), (400,400)).numpy()
+            out = np.around(out)
+            plt.imsave('test/predictions/' + fname[0], out)
