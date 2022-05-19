@@ -1,0 +1,1 @@
+bsub -n 8 -R "rusage[mem=6144]"  "python main.py"
