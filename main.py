@@ -12,7 +12,7 @@ from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
-from models import FCN_res
+from models import FCN_res, Baseline
 import argparse
 
 train_transform = Alb.Compose(
@@ -47,7 +47,7 @@ def main():
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
-    parser.add_argument("--model",type=str, default="fcn_res")
+    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline"])
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,7 +65,9 @@ def main():
     model_name = "fcn_res"
     if model_name == "fcn_res":
         model = FCN_res(n_classes = 1)
-        model = model.to(device)
+    if model_name=="baseline":
+        model = Baseline(n_classes=1)
+    model = model.to(device)
     loss = nn.BCELoss()
     optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
