@@ -1,1 +1,1 @@
-bsub -n 8 -R "rusage[mem=6144]"  "python main.py"
+bsub -n 16 -W 320 -R "rusage[mem=6144]"  "python main.py --batch 16 --wandb True"

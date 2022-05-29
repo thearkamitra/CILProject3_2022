@@ -11,7 +11,7 @@ from absl import app, flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
-    "submission_filename", "submissions/test_sub_2.csv", "The output csv for the submission.")
+    "submission_filename", "submissions/test_sub_3.csv", "The output csv for the submission.")
 flags.DEFINE_string(
     "base_dir", "test/predictions", "The directory with the predicted masks.")
 
