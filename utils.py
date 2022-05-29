@@ -54,8 +54,6 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
     torch.cuda.empty_cache()
 
 def wb_mask(bg_img, pred_mask, true_mask):
-    print(pred_mask.shape)
-    print(true_mask.shape)
     return wandb.Image(bg_img, masks={
         "prediction" : {"mask_data" : pred_mask, "class_labels" : class_labels},
         "ground truth" : {"mask_data" : true_mask, "class_labels" : class_labels}})

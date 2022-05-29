@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline"])
+    parser.add_argument("--modelname",type=str, default="First_check.pth")
     parser.add_argument("--wandb",type=bool, default=False)
 
     args = parser.parse_args()
@@ -78,7 +79,8 @@ def main():
         if(args.wandb):
             wandb.init(project="cil-project-3", entity="cil-aaaa")
             wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
-        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, epochs=args.epochs, wandb_log=args.wandb)
+        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
+              epochs=args.epochs, wandb_log=args.wandb, model_name= args.modelname)
         if(args.wandb):
             wandb.finish()
 
