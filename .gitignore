@@ -3,3 +3,4 @@ test/*
 ./*.png
 __pycache__/*
 First_check.pth
+wandb/*
