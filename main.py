@@ -14,6 +14,7 @@ from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
 from models import FCN_res, Baseline
 import argparse
+import wandb
 
 train_transform = Alb.Compose(
         [
@@ -48,6 +49,7 @@ def main():
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline"])
+    parser.add_argument("--wandb",type=bool, default=False)
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -73,7 +75,12 @@ def main():
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
     if args.cmd=="train":
-        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, epochs=args.epochs)
+        if(args.wandb):
+            wandb.init(project="cil-project-3", entity="cil-aaaa")
+            wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
+        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, epochs=args.epochs, wandb_log=args.wandb)
+        if(args.wandb):
+            wandb.finish()
 
     if args.cmd=="test":
         if args.modeltoload =="":
