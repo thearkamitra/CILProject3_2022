@@ -12,8 +12,9 @@ from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
-from models import FCN_res, Baseline
+from models import FCN_res, Baseline, UNet
 import argparse
+from loss import GeneralizedDiceLoss
 import wandb
 
 train_transform = Alb.Compose(
@@ -48,7 +49,7 @@ def main():
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
-    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline"])
+    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet"])
     parser.add_argument("--modelname",type=str, default="First_check.pth")
     parser.add_argument("--wandb",type=bool, default=False)
 
@@ -70,8 +71,10 @@ def main():
         model = FCN_res(n_classes = 1)
     if model_name=="baseline":
         model = Baseline(n_classes=1)
+    if model_name=="unet":
+        model = UNet(in_channel=3,out_channel=1)
     model = model.to(device)
-    loss = nn.BCELoss()
+    loss = GeneralizedDiceLoss()
     optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
