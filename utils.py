@@ -4,15 +4,23 @@ import pdb
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
+import wandb
+
+class_labels = {
+  0: "not road",
+  1: "road"
+}
+
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
-            epochs=4, model_name = "First_check.pth", device = torch.device("cpu")):
+            epochs=4, model_name = "First_check.pth", device = torch.device("cpu"), \
+            wandb_log=False):
     loss_val_min = torch.tensor(1e10)
     loss_min = torch.tensor(1e10) #Min loss for comparison and saving best models
-    for epoch in tqdm(range(epochs)):    
+    for epoch in tqdm(range(epochs)):
         print(f"Epoch {epoch} training started.")
-        train_epoch(model, train_dataset, optimizer, loss, device)
+        train_epoch(model, train_dataset, optimizer, loss, device, wandb_log)
         print(f"Epoch {epoch} validation started.")
-        loss_val = val_epoch(model, val_dataset, loss, device)
+        loss_val = val_epoch(model, val_dataset, loss, device, wandb_log)
         scheduler.step(loss_val) #Scheduler changes learning rate based on criterion
         if loss_val<loss_min: #Model saved if min val loss obtained
             print("Model weights are saved.")
@@ -24,7 +32,7 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
             }, model_name)
 
 
-def train_epoch(model, train_dataset, optimizer, loss_func, device):
+def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
     '''
     Training per epoch
     '''
@@ -41,10 +49,16 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device):
         loss.backward()
         optimizer.step() #Weights are updated
         del images, masks, out
+        if(wandb_log):
+            wandb.log({"loss": loss})
     torch.cuda.empty_cache()
 
+def wb_mask(bg_img, pred_mask, true_mask):
+    return wandb.Image(bg_img, masks={
+        "prediction" : {"mask_data" : pred_mask, "class_labels" : class_labels},
+        "ground truth" : {"mask_data" : true_mask, "class_labels" : class_labels}})
 
-def val_epoch(model, val_dataset, loss_func, device):
+def val_epoch(model, val_dataset, loss_func, device, wandb_log):
     '''
     Validation Step after each epoch
     '''
@@ -58,7 +72,22 @@ def val_epoch(model, val_dataset, loss_func, device):
             out = model(images)
             out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
-            loss_val+= loss 
+            loss_val+= loss
+
+            if (idx==0 and wandb_log):
+                mask_list = []
+                ct = 4 if images.shape[0] >= 4 else images.shape[0]
+                outs = torch.round(out[:ct])
+
+                for i in range(ct):
+                    pred_mask = torch.reshape(outs[i], (400,400)).numpy()
+                    mask_list.append(wb_mask(images[i], pred_mask, masks[i].numpy()))
+
+                wandb.log({"Predictions": mask_list})
+    
+    if(wandb_log):
+        wandb.log({"validation loss": loss_val})
+
     return loss_val
 
 def test(model, test_dataloader, device):

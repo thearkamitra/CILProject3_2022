@@ -4,3 +4,4 @@ test/*
 __pycache__/*
 First_check.pth
 .ipynb_checkpoints/*
+wandb/*

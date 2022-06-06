@@ -12,8 +12,10 @@ from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
-from models import FCN_res, Baseline
+from models import FCN_res, Baseline, UNet
 import argparse
+from loss import GeneralizedDiceLoss
+import wandb
 
 train_transform = Alb.Compose(
         [
@@ -47,7 +49,9 @@ def main():
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
-    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline"])
+    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet"])
+    parser.add_argument("--modelname",type=str, default="First_check.pth")
+    parser.add_argument("--wandb",type=bool, default=False)
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,13 +71,21 @@ def main():
         model = FCN_res(n_classes = 1)
     if model_name=="baseline":
         model = Baseline(n_classes=1)
+    if model_name=="unet":
+        model = UNet(in_channel=3,out_channel=1)
     model = model.to(device)
-    loss = nn.BCELoss()
+    loss = GeneralizedDiceLoss()
     optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
     if args.cmd=="train":
-        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, epochs=args.epochs)
+        if(args.wandb):
+            wandb.init(project="cil-project-3", entity="cil-aaaa")
+            wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
+        train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
+              epochs=args.epochs, wandb_log=args.wandb, model_name= args.modelname)
+        if(args.wandb):
+            wandb.finish()
 
     if args.cmd=="test":
         if args.modeltoload =="":
