@@ -51,7 +51,7 @@ def main():
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet"])
     parser.add_argument("--modelname",type=str, default="First_check.pth")
-    parser.add_argument("--wandb",type=bool, default=False)
+    parser.add_argument("--wandb", action='store_true')
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
