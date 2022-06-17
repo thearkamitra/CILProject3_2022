@@ -90,12 +90,20 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log):
 
     return loss_val
 
-def test(model, test_dataloader, device):
+def test(model, test_dataloader, device, method='thres', thres = 0.5):
     model.eval()
     with torch.no_grad():
         for _idx,(fname,image) in enumerate(tqdm(test_dataloader)):
             image = image.to(device)
             score = model(image)
             out = torch.reshape(torch.sigmoid(score).cpu(), (400,400)).numpy()
-            out = np.around(out)
+            if method=="thres":
+                out_dtype = out.dtype
+                out = np.array(out>=thres, dtype=out_dtype) 
+            elif method =="dynamic":
+                thres = np.mean(out)
+                out_dtype = out.dtype
+                out = np.array(out>=thres, dtype=out_dtype) 
+            else:
+                out = np.around(out)
             plt.imsave('test/predictions/' + fname[0], out)

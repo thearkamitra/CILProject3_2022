@@ -91,7 +91,7 @@ def main():
         if args.modeltoload =="":
             print("No model file selected. Taking the default one.")
             args.modeltoload = "First_check.pth"
-        model.load_state_dict(torch.load(args.modeltoload)['model_state_dict'])
+        model.load_state_dict(torch.load(args.modeltoload,map_location=torch.device('cpu'))['model_state_dict'])
         model = model.to(device)
         test(model, test_dataloader, device)
 
