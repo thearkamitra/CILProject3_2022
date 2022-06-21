@@ -16,6 +16,7 @@ from models import FCN_res, Baseline, UNet
 import argparse
 from loss import GeneralizedDiceLoss
 import wandb
+import time
 
 train_transform = Alb.Compose(
         [
@@ -50,8 +51,8 @@ def main():
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet"])
-    parser.add_argument("--modelname",type=str, default="First_check.pth")
     parser.add_argument("--wandb", action='store_true')
+    parser.add_argument("-l","--loss", type=str, choices=["dice"], default="dice")
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -66,24 +67,26 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    model_name = "fcn_res"
-    if model_name == "fcn_res":
+    #model_name = "fcn_res"
+    if args.model == "fcn_res":
         model = FCN_res(n_classes = 1)
-    if model_name=="baseline":
+    if args.model =="baseline":
         model = Baseline(n_classes=1)
-    if model_name=="unet":
+    if args.model =="unet":
         model = UNet(in_channel=3,out_channel=1)
     model = model.to(device)
     loss = GeneralizedDiceLoss()
     optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
+    run_name = args.model + "-" + args.loss + "-" + time.strftime("%m-%d_%H-%M")
+
     if args.cmd=="train":
         if(args.wandb):
-            wandb.init(project="cil-project-3", entity="cil-aaaa")
+            wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name)
             wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
         train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
-              epochs=args.epochs, wandb_log=args.wandb, model_name= args.modelname)
+              epochs=args.epochs, wandb_log=args.wandb, model_name= run_name)
         if(args.wandb):
             wandb.finish()
 
