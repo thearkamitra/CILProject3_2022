@@ -47,7 +47,7 @@ test_transform = Alb.Compose(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e","--epochs",type=int, default=20)
-    parser.add_argument("-b","--batch",type = int, default=2)
+    parser.add_argument("-b","--batch",type = int, default=1)
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")

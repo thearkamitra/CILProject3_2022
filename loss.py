@@ -23,3 +23,25 @@ class GeneralizedDiceLoss(nn.Module):
         dice = 2. * (numerator + self.epsilon) / (denominator + self.epsilon)
 
         return 1. - dice
+
+def WeightedBCE(input, mask, weight):
+    """
+        Considers a weight to the roads.
+        Slight changes can incorporate it for any loss actually. Not sure about the local dice focal loss
+    """
+    loss_init = nn.functional.binary_cross_entropy(input, mask, reduction="none")
+    loss_weighted = loss_init*(1- mask) + mask*weight* loss_init
+    return torch.sum(loss_weighted)
+
+def BorderLossBCE(input, mask, weight):
+    """
+    Consider a weight to the borders. Same as WeightedBCE for modularity
+    """
+    loss_init = nn.functional.binary_cross_entropy(input, mask, reduction="none")
+    is_border = torch.ones_like(mask)
+    for i in range(-1,2):
+        for j in range(-1,2):
+            is_border *= torch.roll(mask, shifts=(i,j), dims=(1,2))
+
+    loss_weighted = loss_init*(1- is_border) + is_border*weight* loss_init
+    return torch.sum(loss_weighted)
