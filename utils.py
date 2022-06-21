@@ -44,6 +44,7 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
         images = images.to(device)
         masks = masks.to(device)
         out = model(images)
+        # pdb.set_trace()
         out = torch.sigmoid(out)
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()

@@ -13,6 +13,7 @@ from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
 from models import FCN_res, Baseline, UNet
+from deeplabv3 import MTLDeepLabv3
 import argparse
 from loss import GeneralizedDiceLoss
 import wandb
@@ -45,11 +46,11 @@ test_transform = Alb.Compose(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e","--epochs",type=int, default=20)
-    parser.add_argument("-b","--batch",type = int, default=64)
+    parser.add_argument("-b","--batch",type = int, default=2)
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
-    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet"])
+    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3"])
     parser.add_argument("--modelname",type=str, default="First_check.pth")
     parser.add_argument("--wandb", action='store_true')
 
@@ -66,13 +67,16 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    model_name = "fcn_res"
+    model_name = "deeplabv3"
     if model_name == "fcn_res":
         model = FCN_res(n_classes = 1)
     if model_name=="baseline":
         model = Baseline(n_classes=1)
     if model_name=="unet":
         model = UNet(in_channel=3,out_channel=1)
+    if model_name=="deeplabv3":
+        model = MTLDeepLabv3()
+
     model = model.to(device)
     loss = GeneralizedDiceLoss()
     optimizer = Adam(model.parameters(), args.lr)
