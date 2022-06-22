@@ -38,11 +38,15 @@ def BorderLossBCE(input, mask, weight=2):
     Consider a weight to the borders. Same as WeightedBCE for modularity
     """
     loss_init = nn.functional.binary_cross_entropy(input, mask, reduction="none")
-    is_border = torch.ones_like(mask)
+    is_border = torch.zeros_like(mask)
     for i in range(-1,2):
         for j in range(-1,2):
-            is_border *= torch.roll(mask, shifts=(i,j), dims=(2,3))
-
+            try:
+                is_border += torch.roll(mask, shifts=(i,j), dims=(2,3))
+            except:
+                is_border += torch.roll(mask, shifts=(i,j), dims=(1,2))
+    is_border = torch.where(is_border<9)
+    is_border *= mask
     loss_weighted = loss_init*(1- is_border) + is_border*weight* loss_init
     return torch.sum(loss_weighted)
 
