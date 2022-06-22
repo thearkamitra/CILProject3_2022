@@ -81,8 +81,8 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log):
                 outs = torch.round(out[:ct])
 
                 for i in range(ct):
-                    pred_mask = torch.reshape(outs[i], (400,400)).numpy()
-                    mask_list.append(wb_mask(images[i], pred_mask, masks[i].numpy()))
+                    pred_mask = torch.reshape(outs[i], (400,400)).cpu().numpy()
+                    mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
 
                 wandb.log({"Predictions": mask_list})
     
