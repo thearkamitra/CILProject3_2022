@@ -45,3 +45,10 @@ def BorderLossBCE(input, mask, weight):
 
     loss_weighted = loss_init*(1- is_border) + is_border*weight* loss_init
     return torch.sum(loss_weighted)
+
+def focal_loss(input, mask, weight, gamma=2):
+    p_t = input*mask + (1-input)*(1-mask)
+    ce_loss = nn.functional.binary_cross_entropy(input, mask, reduction ="none")
+    loss_init = ce_loss*((1-p_t)**gamma)
+    loss_weighted = loss_init*(1-mask) + mask*weight*loss_init
+    return torch.sum(loss_weighted)
