@@ -24,7 +24,7 @@ class GeneralizedDiceLoss(nn.Module):
 
         return 1. - dice
 
-def WeightedBCE(input, mask, weight):
+def WeightedBCE(input, mask, weight=2):
     """
         Considers a weight to the roads.
         Slight changes can incorporate it for any loss actually. Not sure about the local dice focal loss
@@ -33,7 +33,7 @@ def WeightedBCE(input, mask, weight):
     loss_weighted = loss_init*(1- mask) + mask*weight* loss_init
     return torch.sum(loss_weighted)
 
-def BorderLossBCE(input, mask, weight):
+def BorderLossBCE(input, mask, weight=2):
     """
     Consider a weight to the borders. Same as WeightedBCE for modularity
     """
@@ -41,14 +41,22 @@ def BorderLossBCE(input, mask, weight):
     is_border = torch.ones_like(mask)
     for i in range(-1,2):
         for j in range(-1,2):
-            is_border *= torch.roll(mask, shifts=(i,j), dims=(1,2))
+            is_border *= torch.roll(mask, shifts=(i,j), dims=(2,3))
 
     loss_weighted = loss_init*(1- is_border) + is_border*weight* loss_init
     return torch.sum(loss_weighted)
 
-def focal_loss(input, mask, weight, gamma=2):
+def FocalLoss(input, mask, weight=2, gamma=2):
     p_t = input*mask + (1-input)*(1-mask)
     ce_loss = nn.functional.binary_cross_entropy(input, mask, reduction ="none")
     loss_init = ce_loss*((1-p_t)**gamma)
     loss_weighted = loss_init*(1-mask) + mask*weight*loss_init
     return torch.sum(loss_weighted)
+
+
+def TverskyLoss(input,mask,weight=0.75):
+    nr = 1 + torch.sum(input*mask)
+    dr = 1 + torch.sum (input*mask + weight*(1-input)*mask + (1-weight)*input*(1-mask))
+    tv_index = nr / dr
+    tvloss = 1 - tv_index
+    return tvloss

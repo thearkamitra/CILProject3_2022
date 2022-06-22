@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from models import FCN_res, Baseline, UNet
 from deeplabv3 import MTLDeepLabv3
 import argparse
-from loss import GeneralizedDiceLoss
+from loss import *
 import wandb
 import time
 
@@ -46,14 +46,14 @@ test_transform = Alb.Compose(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e","--epochs",type=int, default=20)
+    parser.add_argument("-e","--epochs",type=int, default=40)
     parser.add_argument("-b","--batch",type = int, default=1)
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3"])
     parser.add_argument("--wandb", action='store_true')
-    parser.add_argument("-l","--loss", type=str, choices=["dice"], default="dice")
+    parser.add_argument("-l","--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,7 +68,8 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    #model_name = "fcn_res"
+    
+    # Set Model
     if args.model == "fcn_res":
         model = FCN_res(n_classes = 1)
     if args.model =="baseline":
@@ -77,9 +78,19 @@ def main():
         model = UNet(in_channel=3,out_channel=1)
     if args.model=="deeplabv3":
         model = MTLDeepLabv3()
-
     model = model.to(device)
-    loss = GeneralizedDiceLoss()
+
+    # Set Loss
+    if args.loss == 'dice':
+        loss = GeneralizedDiceLoss()
+    elif args.loss == 'wbce':
+        loss = WeightedBCE
+    elif args.loss == 'bbce':
+        loss = BorderLossBCE
+    elif args.loss == 'focal':
+        loss = FocalLoss
+    elif args.loss == 'tv':
+        loss = TverskyLoss
     optimizer = Adam(model.parameters(), args.lr)
     scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
 
