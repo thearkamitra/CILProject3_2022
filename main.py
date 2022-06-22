@@ -90,7 +90,7 @@ def main():
             wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name)
             wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
         train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
-              epochs=args.epochs, wandb_log=args.wandb, model_name= run_name)
+              epochs=args.epochs, wandb_log=args.wandb, model_name= run_name+".pth")
         if(args.wandb):
             wandb.finish()
 
