@@ -48,7 +48,7 @@ class DeepLabv3(nn.Module):
 class UNet(nn.Module):
     def __init__(self, n_classes = 1) -> None:
         super().__init__()
-        self.model = unet.UNet(n_classes)
+        self.model = unet.UNet(in_channel = 3, out_channel= n_classes)
     def forward(self,x):
         return self.model(x)
 

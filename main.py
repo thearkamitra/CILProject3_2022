@@ -12,8 +12,7 @@ from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
-from models import FCN_res, Baseline, UNet
-from deeplabv3 import MTLDeepLabv3
+from models import *
 import argparse
 from loss import *
 import wandb
@@ -48,10 +47,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e","--epochs",type=int, default=40)
     parser.add_argument("-b","--batch",type = int, default=1)
+    parser.add_argument("-c","--num_classes",type = int, default=1)
     parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
-    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3"])
+    parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3","segformer"])
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l","--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
 
@@ -68,16 +68,18 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    
+    n_classes = args.num_classes
     # Set Model
     if args.model == "fcn_res":
-        model = FCN_res(n_classes = 1)
+        model = FCN_res(n_classes)
     if args.model =="baseline":
-        model = Baseline(n_classes=1)
+        model = Baseline(n_classes)
     if args.model =="unet":
-        model = UNet(in_channel=3,out_channel=1)
+        model = UNet(n_classes)
     if args.model=="deeplabv3":
-        model = MTLDeepLabv3()
+        model = DeepLabv3(n_classes)
+    if args.model=="segformer":
+        model = Segformer(n_classes)
     model = model.to(device)
 
     # Set Loss
