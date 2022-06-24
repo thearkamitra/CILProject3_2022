@@ -54,7 +54,7 @@ def main():
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3","segformer"])
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l","--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
-
+    parser.add_argument("-w","--warmup_steps",type=int, default=0)
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -100,10 +100,10 @@ def main():
 
     if args.cmd=="train":
         if(args.wandb):
-            wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name)
+            wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss)
             wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
         train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
-              epochs=args.epochs, wandb_log=args.wandb, model_name= run_name+".pth")
+              epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name= run_name+".pth")
         if(args.wandb):
             wandb.finish()
 

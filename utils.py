@@ -12,7 +12,7 @@ class_labels = {
 }
 
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
-            epochs=4, model_name = "First_check.pth", device = torch.device("cpu"), \
+            epochs=4, warmup=0, model_name = "First_check.pth", device = torch.device("cpu"), \
             wandb_log=False):
     loss_val_min = torch.tensor(1e10)
     loss_min = torch.tensor(1e10) #Min loss for comparison and saving best models
@@ -21,7 +21,6 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
         train_epoch(model, train_dataset, optimizer, loss, device, wandb_log)
         print(f"Epoch {epoch} validation started.")
         loss_val = val_epoch(model, val_dataset, loss, device, wandb_log)
-        scheduler.step(loss_val) #Scheduler changes learning rate based on criterion
         if loss_val<loss_min: #Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
@@ -30,7 +29,8 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
             'model_state_dict': model.state_dict(),
             'loss': loss_val,
             }, model_name)
-
+        if epoch>warmup:
+            scheduler.step(loss_val) #Scheduler changes learning rate based on criterion
 
 def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
     '''
