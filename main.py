@@ -23,7 +23,7 @@ train_transform = Alb.Compose(
             Alb.RandomRotate90(p=0.6),
             Alb.HorizontalFlip(p=0.6),
             Alb.VerticalFlip(p=0.6),
-            Alb.ElasticTransform(p=0.5),
+            # Alb.ElasticTransform(p=0.5),
             Alb.Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
