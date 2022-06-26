@@ -5,6 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import wandb
+from sklearn.metrics import roc_curve
+
 
 class_labels = {
   0: "not road",
@@ -54,6 +56,7 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()
         optimizer.step() #Weights are updated
+        get_auroc(out, masks.unsqueeze(1))
         del images, masks, out
         if(wandb_log):
             wandb.log({"loss": loss})
@@ -113,3 +116,9 @@ def test(model, test_dataloader, device, method='thres', thres = 0.5):
             else:
                 out = np.around(out)
             plt.imsave('test/predictions/' + fname[0], out)
+
+def get_auroc(pred, true):
+    pred = pred.detach().cpu().numpy().reshape(-1,1)
+    true = true.cpu().numpy().reshape(-1,1)
+    fpr, tpr, thresholds = roc_curve(pred, true)
+    return fpr, tpr, thresholds

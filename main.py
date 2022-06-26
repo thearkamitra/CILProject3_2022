@@ -55,12 +55,13 @@ def main():
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l","--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w","--warmup_steps",type=int, default=0)
+    parser.add_argument("-u", "--dataset_to_use", type=str, choices=["new","old","both"], default="old")
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = RoadCIL("training", training=True, transform=train_transform)
-    test_dataset = RoadCIL("test", training=False, transform=test_transform)
-
+    dataset = RoadCIL("training", training=True, transform=train_transform, use=args.dataset_to_use)
+    test_dataset = RoadCIL("test", training=False, transform=test_transform, use=args.dataset_to_use)
+    # pdb.set_trace()
     validation_length = int(2*len(dataset)//10)
     train_dataset, validation_dataset = random_split(dataset, [(len(dataset) - validation_length), validation_length])
 
