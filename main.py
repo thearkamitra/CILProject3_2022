@@ -18,6 +18,8 @@ from loss import *
 import wandb
 import time
 
+torch.manual_seed(42)
+
 train_transform = Alb.Compose(
         [
             Alb.RandomRotate90(p=0.6),
