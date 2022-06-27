@@ -57,10 +57,16 @@ def FocalLoss(input, mask, weight=2, gamma=2):
     loss_weighted = loss_init*(1-mask) + mask*weight*loss_init
     return torch.sum(loss_weighted)
 
+def DiceLoss(input, mask):
+    nr = 1 + torch.sum(2 * input * mask, (1,2,3))
+    dr = 1 + torch.sum(input + mask, (1,2,3))
+    dice_coeff = nr/dr
+    dice_loss = 1 - torch.mean(dice_coeff)
+    return dice_loss
 
 def TverskyLoss(input,mask,weight=0.75):
-    nr = 1 + torch.sum(input*mask)
-    dr = 1 + torch.sum (input*mask + weight*(1-input)*mask + (1-weight)*input*(1-mask))
+    nr = 1 + torch.sum(input*mask, (1,2,3))
+    dr = 1 + torch.sum (input*mask + weight*(1-input)*mask + (1-weight)*input*(1-mask), (1,2,3))
     tv_index = nr / dr
-    tvloss = 1 - tv_index
+    tvloss = 1 - torch.mean(tv_index)
     return tvloss

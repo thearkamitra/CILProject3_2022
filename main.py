@@ -84,8 +84,10 @@ def main():
     model = model.to(device)
 
     # Set Loss
-    if args.loss == 'dice':
+    if args.loss == 'gdice':
         loss = GeneralizedDiceLoss()
+    elif args.loss == 'dice':
+        loss = DiceLoss
     elif args.loss == 'wbce':
         loss = WeightedBCE
     elif args.loss == 'bbce':
