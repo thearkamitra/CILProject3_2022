@@ -5,7 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import wandb
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, RocCurveDisplay
+import matplotlib.pyplot as plt
 
 
 class_labels = {
@@ -135,6 +136,23 @@ def test(model, test_dataloader, device, method='thres', thres = 0.5):
             else:
                 out = np.around(out)
             plt.imsave('test/predictions/' + fname[0], out)
+
+def val_plot_auroc(model, val_dataset, device, name):
+    model.eval()
+    out_all = np.zeros((0,1))
+    masks_all = np.zeros((0,1))
+    with torch.no_grad():
+        for _idx, batch in enumerate(tqdm(val_dataset)):
+            images, masks = batch
+            images = images.to(device)
+            masks = masks.cpu().numpy().reshape(-1,1)
+            out = model(images)
+            out = torch.sigmoid(out).cpu().numpy().reshape(-1,1)
+            out_all = np.concatenate((out_all, out))
+            masks_all = np.concatenate((masks_all, masks))
+        
+    RocCurveDisplay.from_predictions(masks_all, out_all, name=name)
+    plt.savefig(name + '.png')
 
 def get_auroc(pred, true):
     pred = pred.detach().cpu().numpy().reshape(-1,1)

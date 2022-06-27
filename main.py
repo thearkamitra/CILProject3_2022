@@ -8,7 +8,7 @@ from albumentations.pytorch import ToTensorV2
 from torchvision.models.segmentation import fcn_resnet50
 import pdb
 import torch
-from utils import train, test
+from utils import train, test, val_plot_auroc
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def main():
     parser.add_argument("-e","--epochs",type=int, default=40)
     parser.add_argument("-b","--batch",type = int, default=1)
     parser.add_argument("-c","--num_classes",type = int, default=1)
-    parser.add_argument("--cmd",type=str, choices=['train','test'],default="train")
+    parser.add_argument("--cmd",type=str, choices=['train','test','valauroc'],default="train")
     parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("-p","--modeltoload",type=str, default="")
     parser.add_argument("--model",type=str, default="fcn_res", choices = ["fcn_res", "baseline", "unet","deeplabv3","segformer"])
@@ -84,6 +84,9 @@ def main():
     if args.model=="segformer":
         model = Segformer(n_classes)
     model = model.to(device)
+    # Load a model for add training, testing or validation
+    if args.modeltoload != "":
+        model.load_state_dict(torch.load(args.modeltoload,map_location=torch.device('cpu'))['model_state_dict'])
 
     # Set Loss
     if args.loss == 'gdice':
@@ -112,13 +115,13 @@ def main():
         if(args.wandb):
             wandb.finish()
 
-    if args.cmd=="test":
-        if args.modeltoload =="":
-            print("No model file selected. Taking the default one.")
-            args.modeltoload = "First_check.pth"
-        model.load_state_dict(torch.load(args.modeltoload,map_location=torch.device('cpu'))['model_state_dict'])
+    elif args.cmd=="test":
         model = model.to(device)
         test(model, test_dataloader, device)
+
+    elif args.cmd=="valauroc":
+        model = model.to(device)
+        val_plot_auroc(model, validation_dataloader, device=device, name = args.modeltoload)
 
 
 if __name__ == "__main__":
