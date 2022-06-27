@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import pdb
 
 class GeneralizedDiceLoss(nn.Module):
     def __init__(self, epsilon= 1e-9):
@@ -46,7 +47,7 @@ def BorderLossBCE(input, mask, weight=2):
             except:
                 is_border += torch.roll(mask, shifts=(i,j), dims=(1,2))
     is_border = torch.where(is_border<9, 1 , 0)
-    is_border *= mask
+    is_border = is_border * mask
     loss_weighted = loss_init*(1- is_border) + is_border*weight* loss_init
     return torch.sum(loss_weighted)
 
