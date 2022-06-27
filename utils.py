@@ -22,7 +22,8 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler, \
         print(f"Epoch {epoch} training started.")
         train_epoch(model, train_dataset, optimizer, loss, device, wandb_log)
         print(f"Epoch {epoch} validation started.")
-        loss_val = val_epoch(model, val_dataset, loss, device, wandb_log)
+        is_last_epoch = epoch == epochs-1
+        loss_val = val_epoch(model, val_dataset, loss, device, wandb_log, is_last_epoch)
         if loss_val<loss_min: #Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
@@ -67,12 +68,14 @@ def wb_mask(bg_img, pred_mask, true_mask):
         "prediction" : {"mask_data" : pred_mask, "class_labels" : class_labels},
         "ground truth" : {"mask_data" : true_mask, "class_labels" : class_labels}})
 
-def val_epoch(model, val_dataset, loss_func, device, wandb_log):
+def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
     '''
     Validation Step after each epoch
     '''
     model.eval()
     loss_val = 0
+    output_road_vals = np.array([])
+    output_all_vals = np.array([])
     with torch.no_grad():
         for idx, batch in enumerate(tqdm(val_dataset)):
             images, masks = batch
@@ -83,19 +86,35 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log):
             loss = loss_func(out, masks.unsqueeze(1))
             loss_val+= loss
 
+            if is_last_epoch:
+                shape = out.shape[0]*out.shape[1]*out.shape[2]*out.shape[3]
+                out_road_vals = torch.reshape((out*masks.unsqueeze(1)),(1,shape)).squeeze(0).cpu().numpy()
+                output_all_vals = np.concatenate((output_all_vals, out_road_vals))
+                
+                out_road_vals = out_road_vals[out_road_vals.nonzero()]
+                output_road_vals = np.concatenate((output_road_vals, out_road_vals))
+
             if (idx==0 and wandb_log):
                 mask_list = []
+                heatmap_list = []
                 ct = 4 if images.shape[0] >= 4 else images.shape[0]
                 outs = torch.round(out[:ct])
 
                 for i in range(ct):
                     pred_mask = torch.reshape(outs[i], (400,400)).cpu().numpy()
                     mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
+                    heatmap_list.append(wandb.Image(images[i]))
+                    heatmap_list.append(wandb.Image(out[i].cpu()))
 
                 wandb.log({"Predictions": mask_list})
-    
+                wandb.log({"Prediction Heat Maps": heatmap_list})
+
+
     if(wandb_log):
         wandb.log({"validation loss": loss_val})
+        if is_last_epoch:
+            wandb.run.summary.update({'final_prediction_roads': wandb.Histogram(output_road_vals)})
+            wandb.run.summary.update({'final_prediction_all': wandb.Histogram(output_all_vals)})
 
     return loss_val
 
@@ -120,5 +139,5 @@ def test(model, test_dataloader, device, method='thres', thres = 0.5):
 def get_auroc(pred, true):
     pred = pred.detach().cpu().numpy().reshape(-1,1)
     true = true.cpu().numpy().reshape(-1,1)
-    fpr, tpr, thresholds = roc_curve(pred, true)
+    fpr, tpr, thresholds = roc_curve(true, pred)
     return fpr, tpr, thresholds
