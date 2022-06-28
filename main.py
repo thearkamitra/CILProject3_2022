@@ -58,6 +58,7 @@ def main():
     parser.add_argument("-l","--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w","--warmup_steps",type=int, default=0)
     parser.add_argument("-u", "--dataset_to_use", type=str, choices=["new","old","both"], default="old")
+    parser.add_argument("--pretrain", action='store_true')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -72,6 +73,14 @@ def main():
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     n_classes = args.num_classes
+
+    if args.pretrain:
+        p_dataset = RoadCIL("training", training=True, transform=train_transform, use='new')
+        p_validation_length = int(2*len(p_dataset)//10)
+        p_train_dataset, p_validation_dataset = random_split(p_dataset, [(len(p_dataset) - p_validation_length), p_validation_length])
+        p_train_dataloader = DataLoader(p_train_dataset, batch_size=batch_size, shuffle=True)
+        p_validation_dataloader = DataLoader(p_validation_dataset, batch_size=batch_size, shuffle=False)
+
     # Set Model
     if args.model == "fcn_res":
         model = FCN_res(n_classes)
@@ -110,6 +119,9 @@ def main():
         if(args.wandb):
             wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss)
             wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
+        if args.pretrain:
+            train(model, p_train_dataloader, p_validation_dataloader,  loss, optimizer, scheduler, device=device, \
+              epochs=args.epochs, warmup=args.warmup_steps, wandb_log=False, model_name= run_name+".pth")
         train(model, train_dataloader, validation_dataloader,  loss, optimizer, scheduler, device=device, \
               epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name= run_name+".pth")
         if(args.wandb):
