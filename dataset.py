@@ -7,7 +7,7 @@ import numpy as np
 class RoadCIL(Dataset):
     def __init__(self, img_dir, mask_dir=None, training=False, transform=None, use= "old"):
         self.img_dir = img_dir+"/images/"
-        if mask_dir==None:
+        if mask_dir is None:
             self.mask_dir = img_dir
         self.mask_dir = self.mask_dir+"/groundtruth/"
         self.training = training
