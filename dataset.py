@@ -31,15 +31,15 @@ class RoadCIL(Dataset):
         if self.training is False:
             # return test file names and image set
             if self.transform is not None:
-                argumentation = self.transform(image=image)
-                image = argumentation["image"]
+                augmentation = self.transform(image=image)
+                image = augmentation["image"]
             return self.images[index], image
         else:
             mask_path = os.path.join(self.mask_dir, self.images[index])
             mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
             mask[mask == 255.0] = 1.0
             if self.transform is not None:
-                argumentation = self.transform(image=image, mask=mask)
-                image = argumentation["image"]
-                mask = argumentation["mask"]
+                augmentation = self.transform(image=image, mask=mask)
+                image = augmentation["image"]
+                mask = augmentation["mask"]
             return image, mask
