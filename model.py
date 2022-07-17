@@ -8,11 +8,12 @@ import torch
 from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
-import deeplabv3
-import unet
-import segformer
+from models import deeplabv3
+from models import unet
+from models import segformer
+
 class FCN_res(nn.Module):
-    def __init__(self, n_classes = 1) -> None:
+    def __init__(self, n_classes = 1):
         super().__init__()
         self.model = fcn_resnet50(pretrained=True)
         self.model.classifier[4] = nn.Conv2d(512, n_classes, kernel_size = (1,1), stride = (1,1))
@@ -22,7 +23,7 @@ class FCN_res(nn.Module):
     
 
 class Baseline(nn.Module):
-    def __init__(self, n_classes = 1) -> None:
+    def __init__(self, n_classes = 1):
         super().__init__()
         self.model = nn.Sequential(nn.Conv2d(3, 32, 3, padding='valid'),
                             nn.ReLU(),
@@ -39,14 +40,14 @@ class Baseline(nn.Module):
 
 
 class DeepLabv3(nn.Module):
-    def __init__(self, n_classes = 1) -> None:
+    def __init__(self, n_classes = 1):
         super().__init__()
         self.model = deeplabv3.MTLDeepLabv3({'seg':n_classes})
     def forward(self,x):
         return self.model(x)
 
 class UNet(nn.Module):
-    def __init__(self, n_classes = 1) -> None:
+    def __init__(self, n_classes = 1):
         super().__init__()
         self.model = unet.UNet(in_channel = 3, out_channel= n_classes)
     def forward(self,x):
@@ -54,7 +55,7 @@ class UNet(nn.Module):
 
 
 class Segformer(nn.Module):
-    def __init__(self, n_classes = 1) -> None:
+    def __init__(self, n_classes = 1):
         super().__init__()
         self.model = segformer.Segformer(num_classes= n_classes)
     def forward(self,x):
