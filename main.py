@@ -1,22 +1,23 @@
-from pickletools import optimize
 from dataset import *
 import albumentations as Alb
-import sys
-import os
-import torch.nn as nn
 from albumentations.pytorch import ToTensorV2
-from torchvision.models.segmentation import fcn_resnet50
-import pdb
-import torch
 from utils import train, test, val_plot_auroc
-from torch.optim import Adam,lr_scheduler
-from torch.utils.data import random_split, DataLoader
-import matplotlib.pyplot as plt
-from models import *
+from model import *
 import argparse
 from loss import *
 import wandb
 import time
+import torch
+from torch.optim import Adam,lr_scheduler
+from torch.utils.data import random_split, DataLoader
+
+# from pickletools import optimize
+# import matplotlib.pyplot as plt
+# from torchvision.models.segmentation import fcn_resnet50
+# import pdb
+# import sys
+# import os
+# import torch.nn as nn
 
 torch.manual_seed(42)
 
