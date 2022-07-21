@@ -39,7 +39,9 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
             for param_group in optimizer.param_groups:
                 current_lr = param_group["lr"]
             num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-            wandb.log({"Current Learning Rate": current_lr, "# Trainable Parameters": num_params})
+            roc_plt = val_plot_auroc(model, val_dataset, device, model_name)
+            wandb.log({"Current Learning Rate": current_lr, "# Trainable Parameters": num_params, "ROC": roc_plt})
+
 
 
 def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
@@ -157,6 +159,7 @@ def val_plot_auroc(model, val_dataset, device, name):
 
     RocCurveDisplay.from_predictions(masks_all, out_all, name=name)
     plt.savefig(name + '.png')
+    return plt
 
 
 def get_auroc(pred, true):
