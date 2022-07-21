@@ -34,6 +34,22 @@ def WeightedBCE(input, mask, weight=2):
     loss_weighted = loss_init*(1- mask) + mask*weight* loss_init
     return torch.sum(loss_weighted)
 
+def WeightedBCE2(prediction, label):
+
+    label = label.long()
+    mask = label.float()
+    num_road = torch.sum((mask == 1).float()).float()
+    num_bg = torch.sum((mask == 0).float()).float()
+
+    mask[mask == 1] = 1.0 * num_bg / (num_road + num_bg)
+    mask[mask == 0] = 1.1 * num_road / (num_road + num_bg)
+    cost = torch.nn.functional.binary_cross_entropy(prediction.float(), label.float(), weight=mask)
+
+    if label.numel() == 0:
+        return None # maybe throw error instead
+    else:
+        return cost
+
 def BorderLossBCE(input, mask, weight=2):
     """
     Consider a weight to the borders. Same as WeightedBCE for modularity
