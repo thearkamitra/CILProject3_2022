@@ -9,7 +9,7 @@ from utils import train, test
 from torch.optim import Adam,lr_scheduler
 from torch.utils.data import random_split, DataLoader
 
-class UNet(nn.Module):
+class UNetOLD(nn.Module):
     def contracting_block(self, in_channels, out_channels, kernel_size=3):
         block = torch.nn.Sequential(
                     torch.nn.Conv2d(kernel_size=kernel_size, in_channels=in_channels, out_channels=out_channels, padding=1),

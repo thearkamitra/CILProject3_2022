@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("-p", "--modeltoload", type=str, default="")
     parser.add_argument("--model", type=str, default="fcn_res",
-                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet"])
+                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101"])
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
@@ -88,6 +88,8 @@ def main():
         model = Segformer(n_classes)
     if args.model == "resunet":
         model = ResUNet(n_classes)
+    if args.model == "deeplabv3_resnet101":
+        model = DeepLabv3_Resnet101(n_classes)
 
     model = model.to(device)
     # Load a model for add training, testing or validation

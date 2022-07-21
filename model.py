@@ -1,6 +1,7 @@
 import torch.nn as nn
-from torchvision.models.segmentation import fcn_resnet50
+from torchvision.models.segmentation import fcn_resnet50, deeplabv3_resnet101
 from models import deeplabv3, unet, segformer, resunet
+
 
 # import os
 # import pdb
@@ -47,6 +48,18 @@ class DeepLabv3(nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
+
+class DeepLabv3_Resnet101(nn.Module):
+
+    def __init__(self, n_classes=1):
+        super().__init__()
+        self.model = deeplabv3_resnet101(pretrained=True)
+        self.model.classifier[4] = nn.Conv2d(256, n_classes, kernel_size=(1, 1), stride=(1, 1))
+        self.model.aux_classifier[4] = nn.Conv2d(256, n_classes, kernel_size=(1, 1), stride=(1, 1))
+
+    def forward(self, x):
+        return self.model(x)['out']
 
 
 class UNet(nn.Module):
