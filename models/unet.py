@@ -14,7 +14,6 @@ class encoding_block(nn.Module):
         padding=0,
         stride=1,
         dilation=1,
-        batch_norm=True,
         dropout=False,
     ):
         super().__init__()
@@ -59,7 +58,7 @@ class encoding_block(nn.Module):
 
 # decoding block
 class decoding_block(nn.Module):
-    def __init__(self, in_size, out_size, batch_norm=False, upsampling=True):
+    def __init__(self, in_size, out_size, upsampling=True):
         super().__init__()
 
         if upsampling:
@@ -71,7 +70,7 @@ class decoding_block(nn.Module):
         else:
             self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=2, stride=2)
 
-        self.conv = encoding_block(in_size, out_size, batch_norm=batch_norm)
+        self.conv = encoding_block(in_size, out_size)
 
     def forward(self, input1, input2):
 
