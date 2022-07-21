@@ -117,8 +117,8 @@ def main():
 
     if args.cmd == "train":
         if args.wandb:
-            wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss)
-            wandb.config = {"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch}
+            wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss,
+                       config={"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch})
         train(model, train_dataloader, validation_dataloader, loss, optimizer, scheduler, device=device,
               epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name=run_name + ".pth")
         if args.wandb:
