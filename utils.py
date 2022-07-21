@@ -14,7 +14,7 @@ class_labels = {
 
 
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
-          epochs=4, warmup=0, model_name="First_check.pth", device=torch.device("cpu"),
+          epochs=4, warmup=0, model_name="first_check.pth", device=torch.device("cpu"),
           wandb_log=False):
     loss_val_min = torch.tensor(1e10)
     loss_min = torch.tensor(1e10)  # Min loss for comparison and saving best models
@@ -32,13 +32,14 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
                 'model_state_dict': model.state_dict(),
                 'loss': loss_val,
             }, model_name)
-        if epoch > warmup:
-            scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
-
+        # if epoch > warmup:
+        #     scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
+        scheduler.step()
         if wandb_log:
             for param_group in optimizer.param_groups:
                 current_lr = param_group["lr"]
             wandb.log({"Current Learning Rate": current_lr})
+
     if wandb_log:
         num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         roc_plt = val_plot_auroc(model, val_dataset, device, model_name)
@@ -109,6 +110,7 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 output_road_vals = np.concatenate((output_road_vals, out_road_vals))
 
             if idx == 0 and wandb_log:
+                preds_split = []
                 mask_list = []
                 heatmap_list = []
                 ct = 4 if images.shape[0] >= 4 else images.shape[0]
@@ -117,11 +119,13 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 for i in range(ct):
                     pred_mask = torch.reshape(outs[i], (400, 400)).cpu().numpy()
                     mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
+                    preds_split = wandb.Image(np.vstack((images[i], masks[i].cpu().numpy(), pred_mask)), caption="Top: Input, Middle: GT Mask, Bottom: Pred Mask")
                     heatmap_list.append(wandb.Image(images[i]))
                     heatmap_list.append(wandb.Image(out[i].cpu()))
 
                 wandb.log({"Predictions": mask_list})
                 wandb.log({"Prediction Heat Maps": heatmap_list})
+                wandb.log({"Predictions (split)": preds_split})
 
     if wandb_log:
         wandb.log({"validation loss": loss_val, "validation mean IOU": iou_val/len(val_dataset)})
