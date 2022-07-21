@@ -1,8 +1,6 @@
 import torch.nn as nn
 from torchvision.models.segmentation import fcn_resnet50
-from models import deeplabv3
-from models import unet
-from models import segformer
+from models import deeplabv3, unet, segformer, resunet
 
 # import os
 # import pdb
@@ -64,6 +62,15 @@ class Segformer(nn.Module):
     def __init__(self, n_classes=1):
         super().__init__()
         self.model = segformer.Segformer(num_classes=n_classes)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class ResUNet(nn.Module):
+    def __init__(self, n_classes=1):
+        super().__init__()
+        self.model = resunet.ResUnet(in_channel=3, out_channel=n_classes)
 
     def forward(self, x):
         return self.model(x)

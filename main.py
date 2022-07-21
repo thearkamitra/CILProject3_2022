@@ -23,9 +23,9 @@ torch.manual_seed(42)
 
 train_transform = Alb.Compose(
     [
-        Alb.RandomRotate90(p=0.6),
-        Alb.HorizontalFlip(p=0.6),
-        Alb.VerticalFlip(p=0.6),
+        # Alb.RandomRotate90(p=0.6),
+        # Alb.HorizontalFlip(p=0.6),
+        # Alb.VerticalFlip(p=0.6),
         # Alb.ElasticTransform(p=0.5),
         Alb.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -56,9 +56,9 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("-p", "--modeltoload", type=str, default="")
     parser.add_argument("--model", type=str, default="fcn_res",
-                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer"])
+                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet"])
     parser.add_argument("--wandb", action='store_true')
-    parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "bbce", "focal", "tv"], default="dice")
+    parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
     parser.add_argument("-u", "--dataset_to_use", type=str, choices=["new", "old", "both"], default="old")
     args = parser.parse_args()
@@ -86,6 +86,9 @@ def main():
         model = DeepLabv3(n_classes)
     if args.model == "segformer":
         model = Segformer(n_classes)
+    if args.model == "resunet":
+        model = ResUNet(n_classes)
+
     model = model.to(device)
     # Load a model for add training, testing or validation
     if args.modeltoload != "":
@@ -98,6 +101,8 @@ def main():
         loss = DiceLoss
     elif args.loss == 'wbce':
         loss = WeightedBCE
+    elif args.loss == 'wbce2':
+        loss = WeightedBCE2
     elif args.loss == 'bbce':
         loss = BorderLossBCE
     elif args.loss == 'focal':
@@ -105,7 +110,8 @@ def main():
     elif args.loss == 'tv':
         loss = TverskyLoss
     optimizer = Adam(model.parameters(), args.lr)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
+    # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
     run_name = args.model + "-" + args.loss + "-" + time.strftime("%m-%d_%H-%M")
 
