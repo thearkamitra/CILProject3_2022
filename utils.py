@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 import numpy as np
 import wandb
-from sklearn.metrics import roc_curve, RocCurveDisplay
+from sklearn.metrics import roc_curve, RocCurveDisplay, jaccard_score
 import matplotlib.pyplot as plt
 
 class_labels = {
@@ -38,10 +38,11 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
         if wandb_log:
             for param_group in optimizer.param_groups:
                 current_lr = param_group["lr"]
-            num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-            roc_plt = val_plot_auroc(model, val_dataset, device, model_name)
-            wandb.log({"Current Learning Rate": current_lr, "# Trainable Parameters": num_params, "ROC": roc_plt})
-
+            wandb.log({"Current Learning Rate": current_lr})
+    if wandb_log:
+        num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        roc_plt = val_plot_auroc(model, val_dataset, device, model_name)
+        wandb.log({"ROC": roc_plt, "# Trainable Parameters": num_params})
 
 
 def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
@@ -61,7 +62,7 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()
         optimizer.step()  # Weights are updated
-        get_auroc(out, masks.unsqueeze(1))
+        # get_auroc(out, masks.unsqueeze(1))
         del images, masks, out
         if wandb_log:
             wandb.log({"loss": loss})
@@ -80,6 +81,7 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
     """
     model.eval()
     loss_val = 0
+    iou_val = 0
     output_road_vals = np.array([])
     output_all_vals = np.array([])
     with torch.no_grad():
@@ -91,6 +93,12 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
             out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
             loss_val += loss
+
+            # Compute iou
+            iou_threshold = 0.5
+            p = np.where(out.cpu().numpy().reshape(-1, 1) >= iou_threshold, 1, 0)
+            t = masks.cpu().numpy().reshape(-1, 1)
+            iou_val += jaccard_score(p, t)
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -116,7 +124,7 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 wandb.log({"Prediction Heat Maps": heatmap_list})
 
     if wandb_log:
-        wandb.log({"validation loss": loss_val})
+        wandb.log({"validation loss": loss_val, "validation mean IOU": iou_val/len(val_dataset)})
         if is_last_epoch:
             wandb.run.summary.update({'final_prediction_roads': wandb.Histogram(output_road_vals)})
             wandb.run.summary.update({'final_prediction_all': wandb.Histogram(output_all_vals)})

@@ -1,5 +1,5 @@
-albumentations
+albumentations==0.4.6
 einops==0.4.1
 torchvision
-
+wandb
 
