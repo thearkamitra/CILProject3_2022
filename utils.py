@@ -38,7 +38,8 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
         if wandb_log:
             for param_group in optimizer.param_groups:
                 current_lr = param_group["lr"]
-            wandb.log({"Current Learning Rate": current_lr})
+            num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            wandb.log({"Current Learning Rate": current_lr, "# Trainable Parameters": num_params})
 
 
 def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
