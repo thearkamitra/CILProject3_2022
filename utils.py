@@ -111,7 +111,6 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 output_road_vals = np.concatenate((output_road_vals, out_road_vals))
 
             if idx == 0 and wandb_log:
-                preds_split = []
                 mask_list = []
                 heatmap_list = []
                 ct = 4 if images.shape[0] >= 4 else images.shape[0]
@@ -120,14 +119,11 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 for i in range(ct):
                     pred_mask = torch.reshape(outs[i], (400, 400)).cpu().numpy()
                     mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
-                    combined_image = np.vstack((np.array(Image.fromarray((images[0].cpu().numpy().reshape(400,400,3) * 255).astype(np.uint8)).convert("L")), masks[i].cpu().numpy(), pred_mask))
-                    preds_split.append(wandb.Image(combined_image, caption="Top: Input, Middle: GT Mask, Bottom: Pred Mask"))
                     heatmap_list.append(wandb.Image(images[i]))
                     heatmap_list.append(wandb.Image(out[i].cpu()))
 
                 wandb.log({"Predictions": mask_list})
                 wandb.log({"Prediction Heat Maps": heatmap_list})
-                wandb.log({"Predictions (split)": preds_split})
 
     if wandb_log:
         wandb.log({"validation loss": loss_val, "validation mean IOU": iou_val/len(val_dataset)})
