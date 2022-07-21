@@ -23,9 +23,9 @@ torch.manual_seed(42)
 
 train_transform = Alb.Compose(
     [
-        # Alb.RandomRotate90(p=0.6),
-        # Alb.HorizontalFlip(p=0.6),
-        # Alb.VerticalFlip(p=0.6),
+        Alb.RandomRotate90(p=0.6),
+        Alb.HorizontalFlip(p=0.6),
+        Alb.VerticalFlip(p=0.6),
         # Alb.ElasticTransform(p=0.5),
         Alb.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -111,7 +111,7 @@ def main():
         loss = TverskyLoss
     optimizer = Adam(model.parameters(), args.lr)
     # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
     run_name = args.model + "-" + args.loss + "-" + time.strftime("%m-%d_%H-%M")
 
