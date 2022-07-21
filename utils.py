@@ -119,7 +119,7 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 for i in range(ct):
                     pred_mask = torch.reshape(outs[i], (400, 400)).cpu().numpy()
                     mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
-                    preds_split = wandb.Image(np.vstack((images[i], masks[i].cpu().numpy(), pred_mask)), caption="Top: Input, Middle: GT Mask, Bottom: Pred Mask")
+                    preds_split = wandb.Image(np.vstack((images[i].cpu().numpy(), masks[i].cpu().numpy(), pred_mask)), caption="Top: Input, Middle: GT Mask, Bottom: Pred Mask")
                     heatmap_list.append(wandb.Image(images[i]))
                     heatmap_list.append(wandb.Image(out[i].cpu()))
 
