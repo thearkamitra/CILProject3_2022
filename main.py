@@ -60,6 +60,7 @@ def main():
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
+    parser.add_argument("-sp", "--save_path", type=str, default="./")
     parser.add_argument("-u", "--dataset_to_use", type=str, choices=["new", "old", "both"], default="old")
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -122,7 +123,8 @@ def main():
             wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss,
                        config={"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch})
         train(model, train_dataloader, validation_dataloader, loss, optimizer, scheduler, device=device,
-              epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name=run_name + ".pth")
+              epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name=run_name + ".pth",
+              save_path=args.save_path)
         if args.wandb:
             wandb.finish()
 
