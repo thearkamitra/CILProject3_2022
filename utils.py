@@ -31,7 +31,7 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
-                'loss': loss_val,
+                'training_loss': loss_val,
             }, save_path+model_name)
         # if epoch > warmup:
         #     scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
@@ -83,7 +83,10 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
     """
     model.eval()
     loss_val = 0
-    iou_val = 0
+    iou_val_4 = 0
+    iou_val_5 = 0
+    iou_val_6 = 0
+    iou_val_7 = 0
     output_road_vals = np.array([])
     output_all_vals = np.array([])
     with torch.no_grad():
@@ -97,10 +100,24 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
             loss_val += loss
 
             # Compute iou
+            t = masks.cpu().numpy().reshape(-1, 1)
+
+            iou_threshold = 0.4
+            p = np.where(out.cpu().numpy().reshape(-1, 1) >= iou_threshold, 1, 0)
+            iou_val_4 += jaccard_score(p, t)
+
             iou_threshold = 0.5
             p = np.where(out.cpu().numpy().reshape(-1, 1) >= iou_threshold, 1, 0)
-            t = masks.cpu().numpy().reshape(-1, 1)
-            iou_val += jaccard_score(p, t)
+            iou_val_5 += jaccard_score(p, t)
+
+            iou_threshold = 0.6
+            p = np.where(out.cpu().numpy().reshape(-1, 1) >= iou_threshold, 1, 0)
+            iou_val_6 += jaccard_score(p, t)
+
+            iou_threshold = 0.7
+            p = np.where(out.cpu().numpy().reshape(-1, 1) >= iou_threshold, 1, 0)
+            iou_val_7 += jaccard_score(p, t)
+
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -127,7 +144,12 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                 wandb.log({"Prediction Heat Maps": heatmap_list})
 
     if wandb_log:
-        wandb.log({"validation loss": loss_val, "validation mean IOU": iou_val/len(val_dataset)})
+        wandb.log({"validation loss": loss_val,
+                   "val mIOU, threshold 0.4": iou_val_4/len(val_dataset),
+                   "val mIOU, threshold 0.5": iou_val_5/len(val_dataset),
+                   "val mIOU, threshold 0.6": iou_val_6/len(val_dataset),
+                   "val mIOU, threshold 0.7": iou_val_7/len(val_dataset)
+                   })
         if is_last_epoch:
             wandb.run.summary.update({'final_prediction_roads': wandb.Histogram(output_road_vals)})
             wandb.run.summary.update({'final_prediction_all': wandb.Histogram(output_all_vals)})
