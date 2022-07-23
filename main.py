@@ -23,9 +23,9 @@ torch.manual_seed(42)
 
 train_transform = Alb.Compose(
     [
-        Alb.RandomRotate90(p=0.6),
-        Alb.HorizontalFlip(p=0.6),
-        Alb.VerticalFlip(p=0.6),
+        Alb.RandomRotate90(p=0.2),
+        Alb.HorizontalFlip(p=0.2),
+        Alb.VerticalFlip(p=0.2),
         # Alb.ElasticTransform(p=0.5),
         Alb.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("-p", "--modeltoload", type=str, default="")
     parser.add_argument("--model", type=str, default="fcn_res",
-                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101"])
+                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
@@ -91,6 +91,8 @@ def main():
         model = ResUNet(n_classes)
     if args.model == "deeplabv3_resnet101":
         model = DeepLabv3_Resnet101(n_classes)
+    if args.model == "unetsmp":
+        model = UNetSMP(n_classes, decoder_attention=False)
 
     model = model.to(device)
     # Load a model for add training, testing or validation
