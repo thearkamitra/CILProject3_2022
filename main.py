@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--model", type=str, default="fcn_res",
                         choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
     parser.add_argument("--wandb", action='store_true')
+    parser.add_argument("--pretrain", action='store_true')
     parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
     parser.add_argument("-sp", "--save_path", type=str, default="./")
@@ -65,7 +66,7 @@ def main():
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = RoadCIL("training", training=True, transform=train_transform, use=args.dataset_to_use)
+    dataset = RoadCIL("training" if args.pretrain else "massachusetts-road-dataset/processed", training=True, transform=train_transform, use=args.dataset_to_use)
     test_dataset = RoadCIL("test", training=False, transform=test_transform, use=args.dataset_to_use)
     # pdb.set_trace()
     validation_length = int(2 * len(dataset) // 10)
