@@ -66,7 +66,7 @@ def main():
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dataset = RoadCIL("training" if args.pretrain else "massachusetts-road-dataset/processed", training=True, transform=train_transform, use=args.dataset_to_use)
+    dataset = RoadCIL("massachusetts-road-dataset" if args.pretrain else "training", training=True, transform=train_transform, use=args.dataset_to_use)
     test_dataset = RoadCIL("test", training=False, transform=test_transform, use=args.dataset_to_use)
     # pdb.set_trace()
     validation_length = int(2 * len(dataset) // 10)
