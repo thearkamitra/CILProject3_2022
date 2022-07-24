@@ -17,14 +17,13 @@ class_labels = {
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
           epochs=4, warmup=0, model_name="first_check.pth", device=torch.device("cpu"),
           wandb_log=False, save_path="./"):
-    loss_val_min = torch.tensor(1e10)
     loss_min = torch.tensor(1e10)  # Min loss for comparison and saving best models
     for epoch in tqdm(range(epochs)):
         print(f"Epoch {epoch} training started.")
-        train_epoch(model, train_dataset, optimizer, loss, device, wandb_log)
+        train_epoch(model, train_dataset, optimizer, loss, device, epoch, wandb_log)
         print(f"Epoch {epoch} validation started.")
         is_last_epoch = epoch == epochs - 1
-        loss_val = val_epoch(model, val_dataset, loss, device, wandb_log, is_last_epoch)
+        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch)
         if loss_val < loss_min:  # Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
@@ -32,14 +31,9 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'training_loss': loss_val,
-            }, save_path+model_name)
+            }, save_path + model_name)
         if epoch > warmup:
             scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
-        # scheduler.step()
-        if wandb_log:
-            for param_group in optimizer.param_groups:
-                current_lr = param_group["lr"]
-            wandb.log({"Current Learning Rate": current_lr})
 
     if wandb_log:
         num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -47,7 +41,7 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
         wandb.log({"ROC": roc_plt, "# Trainable Parameters": num_params})
 
 
-def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
+def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb_log):
     """
     Training per epoch
     """
@@ -67,7 +61,9 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, wandb_log):
         # get_auroc(out, masks.unsqueeze(1))
         del images, masks, out
         if wandb_log:
-            wandb.log({"loss": loss})
+            for param_group in optimizer.param_groups:
+                current_lr = param_group["lr"]
+            wandb.log({"loss": loss, "epoch": epoch, "current lr": current_lr})
     torch.cuda.empty_cache()
 
 
@@ -77,7 +73,7 @@ def wb_mask(bg_img, pred_mask, true_mask):
         "ground truth": {"mask_data": true_mask, "class_labels": class_labels}})
 
 
-def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
+def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_epoch):
     """
     Validation Step after each epoch
     """
@@ -97,13 +93,13 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
             out = model(images)
             out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
-            loss_val += loss
+            loss_val += (loss / len (val_dataset))
 
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
             for k, v in iou_dict.items():
                 pred = np.where(out.cpu().numpy().reshape(-1, 1) >= k, 1, 0)
-                v += (jaccard_score(pred, tar) / len(val_dataset))
+                iou_dict[k] += (jaccard_score(pred, tar) / len(val_dataset))
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -126,15 +122,14 @@ def val_epoch(model, val_dataset, loss_func, device, wandb_log, is_last_epoch):
                     heatmap_list.append(wandb.Image(masks[i].cpu()))
                     heatmap_list.append(wandb.Image(out[i].cpu()))
 
-                wandb.log({"Predictions": mask_list})
-                wandb.log({"Prediction Heat Maps": heatmap_list})
+                wandb.log({"Predictions": mask_list, "Prediction Heat Maps": heatmap_list})
 
     if wandb_log:
         validation_iou_log = {}
         for k, v in iou_dict.items():
             validation_iou_log[f"val mIOU, threshold {k}"] = v
 
-        wandb.log({"validation loss": loss_val})
+        wandb.log({"validation loss": loss_val, "epoch": epoch})
         wandb.log(validation_iou_log)
 
         if is_last_epoch:

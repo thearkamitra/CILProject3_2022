@@ -69,7 +69,7 @@ def main():
     dataset = RoadCIL("massachusetts-road-dataset" if args.pretrain else "training", training=True, transform=train_transform, use=args.dataset_to_use)
     test_dataset = RoadCIL("test", training=False, transform=test_transform, use=args.dataset_to_use)
     # pdb.set_trace()
-    validation_length = int(2 * len(dataset) // 10)
+    validation_length = 50 if args.pretrain else int(2 * len(dataset) // 10)
     train_dataset, validation_dataset = random_split(dataset, [(len(dataset) - validation_length), validation_length])
 
     batch_size = args.batch
