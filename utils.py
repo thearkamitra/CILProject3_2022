@@ -33,9 +33,9 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
                 'model_state_dict': model.state_dict(),
                 'training_loss': loss_val,
             }, save_path+model_name)
-        # if epoch > warmup:
-        #     scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
-        scheduler.step()
+        if epoch > warmup:
+            scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
+        # scheduler.step()
         if wandb_log:
             for param_group in optimizer.param_groups:
                 current_lr = param_group["lr"]

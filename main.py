@@ -115,8 +115,8 @@ def main():
     elif args.loss == 'tv':
         loss = TverskyLoss
     optimizer = Adam(model.parameters(), args.lr)
-    # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
     run_name = args.model + "-" + args.loss + "-" + time.strftime("%m-%d_%H-%M")
 
