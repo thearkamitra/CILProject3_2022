@@ -2,6 +2,7 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
+import torch
 
 
 class RoadCIL(Dataset):
@@ -43,3 +44,50 @@ class RoadCIL(Dataset):
                 image = augmentation["image"]
                 mask = augmentation["mask"]
             return image, mask
+
+class RoadCILPostProcess(Dataset):
+    def __init__(self, img_dir, segmentation_model, segmentation_transform, pred_transform, device, thresh=0.5, mask_dir=None, training=False):
+        self.img_dir = img_dir + "/images/"
+        if mask_dir is None:
+            self.mask_dir = img_dir
+        self.mask_dir = self.mask_dir + "/groundtruth/"
+        self.training = training
+        self.pred_transform = pred_transform
+        self.images = os.listdir(self.img_dir)
+        self.model = segmentation_model
+        self.thresh = thresh
+        self.device = device
+        self.seg_transform = segmentation_transform
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+
+        img_path = os.path.join(self.img_dir, self.images[index])
+        image = np.array(Image.open(img_path).convert("RGB"))
+
+        self.model.eval()
+        with torch.no_grad():
+            augmentation = self.seg_transform(image=image)
+            image = augmentation["image"].unsqueeze(0)
+            image = image.to(self.device)
+            score = self.model(image)
+            seg_pred = torch.reshape(torch.sigmoid(score).cpu(), (400, 400)).numpy()
+            seg_pred = np.array(seg_pred >= self.thresh, dtype=seg_pred.dtype)
+
+        if self.training is False:
+            # return test file names and image set
+            if self.pred_transform is not None:
+                augmentation = self.pred_transform(image=seg_pred)
+                seg_pred = augmentation["image"]
+            return self.images[index], seg_pred
+        else:
+            mask_path = os.path.join(self.mask_dir, self.images[index])
+            mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
+            mask[mask == 255.0] = 1.0
+            if self.pred_transform is not None:
+                augmentation = self.pred_transform(image=seg_pred, mask=mask)
+                seg_pred = augmentation["image"]
+                mask = augmentation["mask"]
+            return seg_pred, mask
