@@ -47,13 +47,11 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb
     """
     model.train()
     for idx, batch in enumerate(tqdm(train_dataset)):
-        # pdb.set_trace()
         optimizer.zero_grad()
         images, masks = batch
         images = images.to(device)
         masks = masks.to(device)
         out = model(images)
-        # pdb.set_trace()
         out = torch.sigmoid(out)
         loss = loss_func(out, masks.unsqueeze(1))
         loss.backward()
@@ -87,13 +85,13 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     output_all_vals = np.array([])
     with torch.no_grad():
         for idx, batch in enumerate(tqdm(val_dataset)):
-            images, masks = batch
+            images, masks = batch # if post_process is True, the images will actually be predictions.
             images = images.to(device)
             masks = masks.to(device)
             out = model(images)
             out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
-            loss_val += (loss / len (val_dataset))
+            loss_val += (loss / len(val_dataset))
 
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
