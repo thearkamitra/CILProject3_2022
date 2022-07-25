@@ -18,10 +18,10 @@ import numpy as np
 ########################################################################################################################
 
 # Input dataset path.
-inputPath = './massachusetts-road-dataset/tiff/'
-outputPath = './massachusetts-road-dataset/processed0.05/'
-mapDir = 'groundtruth'
-satDir = 'images'
+inputPath = "./massachusetts-road-dataset/tiff/"
+outputPath = "./massachusetts-road-dataset/processed0.05/"
+mapDir = "groundtruth"
+satDir = "images"
 
 # Threshold for all-white parts of the satellite images - ratio of white pixels (intensity == 255). If the white/other
 # ratio is higher than this threshold, the image is dropped.
@@ -38,23 +38,23 @@ patchSize = (400, 400)
 #                                                  MAIN SCRIPT
 ########################################################################################################################
 
-imagesFiles = [im for im in os.listdir(inputPath + satDir) if im.endswith('.tiff')]
+imagesFiles = [im for im in os.listdir(inputPath + satDir) if im.endswith(".tiff")]
 
 numFiles = len(imagesFiles)
 
 for idx, imgFile in enumerate(imagesFiles):
 
-    print('Processing image {im} / {tot}'.format(im=idx + 1, tot=numFiles))
+    print("Processing image {im} / {tot}".format(im=idx + 1, tot=numFiles))
 
     # Load satellite image.
-    img = Image.open(inputPath + satDir + '/' + imgFile)
-    assert(img.mode == 'RGB')
+    img = Image.open(inputPath + satDir + "/" + imgFile)
+    assert img.mode == "RGB"
 
     # Get image size.
     imgSize = img.size
 
     # Convert image to grayscale.
-    gsImg = img.convert(mode='L')
+    gsImg = img.convert(mode="L")
     hist = gsImg.histogram()
 
     whitePxRatio = float(hist[255]) / (imgSize[0] * imgSize[1])
@@ -63,13 +63,17 @@ for idx, imgFile in enumerate(imagesFiles):
     if whitePxRatio < whitePxRatioTh:
         # Load ground truth road binary mask
         try:
-            gtMask = Image.open(inputPath + mapDir + '/' + imgFile[:-1])
+            gtMask = Image.open(inputPath + mapDir + "/" + imgFile[:-1])
         except:
-            print('Error: cannot open ground truth binary mask file {f}'.format(f=inputPath + mapDir + '/' + imgFile))
+            print(
+                "Error: cannot open ground truth binary mask file {f}".format(
+                    f=inputPath + mapDir + "/" + imgFile
+                )
+            )
             continue
 
         # Check that mask's size matches the corresponding image.
-        assert(gtMask.size == imgSize)
+        assert gtMask.size == imgSize
 
         # Upscale the image and the mask. For upsampling, nearest neighbour (NEAREST) is used.
         # Another possible option is BICUBIC (only for satellite img), which, however, blurs the image. We need to experiment
@@ -78,8 +82,8 @@ for idx, imgFile in enumerate(imagesFiles):
         imgSize = newSize
 
         # Check that at least one patch can fit in the original image.
-        assert(newSize[0] // patchSize[0] > 0)
-        assert(newSize[1] // patchSize[1] > 0)
+        assert newSize[0] // patchSize[0] > 0
+        assert newSize[1] // patchSize[1] > 0
 
         img = img.resize(newSize, resample=Image.NEAREST)
         gtMask = gtMask.resize(newSize, resample=Image.NEAREST)
@@ -97,7 +101,11 @@ for idx, imgFile in enumerate(imagesFiles):
         centersInCol = np.linspace(top, bottom, numPatchesInCol, dtype=np.int32)
 
         # Coordinates of patches (left, top, right, bottom)
-        patchesCoords = [(l, t, l + patchSize[0], t + patchSize[1]) for t in centersInCol for l in centersInRow]
+        patchesCoords = [
+            (l, t, l + patchSize[0], t + patchSize[1])
+            for t in centersInCol
+            for l in centersInRow
+        ]
 
         # Process each patch
         for pc in patchesCoords:
@@ -106,7 +114,7 @@ for idx, imgFile in enumerate(imagesFiles):
             patchImg = img.crop(pc)
 
             # Check correct size of a patch.
-            assert(patchMask.size == patchSize)
+            assert patchMask.size == patchSize
 
             # Find the ratio of white pixels (roads) to black pixels (background).
             patchMaskHist = patchMask.histogram()
@@ -114,8 +122,14 @@ for idx, imgFile in enumerate(imagesFiles):
 
             # Check whether there is sufficient amount of roads in this patch and if so, save the patch (img and mask).
             if maskWhitePxRatio > maskWhitePxRatioTh:
-                nameSuffix = '_(' + str(pc[1] + patchSize[1] // 2) + ', ' + str(pc[0] + patchSize[0] // 2) + ')'
-                name = imgFile[:-5] + nameSuffix + '.tiff'
+                nameSuffix = (
+                    "_("
+                    + str(pc[1] + patchSize[1] // 2)
+                    + ", "
+                    + str(pc[0] + patchSize[0] // 2)
+                    + ")"
+                )
+                name = imgFile[:-5] + nameSuffix + ".tiff"
 
-                patchImg.save(outputPath + satDir + '/' + name)
-                patchMask.save(outputPath + mapDir + '/' + name)
+                patchImg.save(outputPath + satDir + "/" + name)
+                patchMask.save(outputPath + mapDir + "/" + name)

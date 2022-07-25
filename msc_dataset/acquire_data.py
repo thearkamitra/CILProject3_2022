@@ -13,52 +13,53 @@ from tqdm import tqdm
 import click
 import time
 
+
 def download_images(link_file_images, output_directory, image_type):
-	"""
-	Reads a file with links to the images, and downloads them to the specified location.
+    """
+    Reads a file with links to the images, and downloads them to the specified location.
 
-	Parameters
-   	----------
-	>link_file_images (str): path to the file with images.
-	>output_directory (str): path to target directory.
-	>image_type (str): Whether the images are target masks or satellite images.
-	"""
+    Parameters
+    ----------
+    >link_file_images (str): path to the file with images.
+    >output_directory (str): path to target directory.
+    >image_type (str): Whether the images are target masks or satellite images.
+    """
 
-	print("\nDownloading", image_type)
-	
-	counter = 0
+    print("\nDownloading", image_type)
 
-	with open(link_file_images, 'r') as link_file:
-		image_links = link_file.readlines()
+    counter = 0
 
-	for image_link in tqdm(image_links, total = len(image_links)):
+    with open(link_file_images, "r") as link_file:
+        image_links = link_file.readlines()
 
-		if(counter >199):
-			break
-		print(image_linkx)
-		
-		image_path = output_directory + image_type + "/" + os.path.basename(image_link)
-		
-		urllib.request.urlretrieve(image_link, image_path)
-		
-		counter += 1
-	
-	print("{} images downloaded to {}\n".format(counter, output_directory+image_type))
+    for image_link in tqdm(image_links, total=len(image_links)):
+
+        if counter > 199:
+            break
+        print(image_links)
+
+        image_path = output_directory + image_type + "/" + os.path.basename(image_link)
+
+        urllib.request.urlretrieve(image_link, image_path)
+
+        counter += 1
+
+    print("{} images downloaded to {}\n".format(counter, output_directory + image_type))
 
 
-if __name__ == '__main__':
-	
-	dataset_name = "MassachusettsRoads"
-	link_file_images = "../Data/_Links/{}/Images.txt".format(dataset_name)
-	link_file_targets = "../Data/_Links/{}/Targets.txt".format(dataset_name)
-	output_directory = "../Data/{}/".format(dataset_name)
+if __name__ == "__main__":
 
-	if not os.path.exists(output_directory):
-		os.mkdir(output_directory)
-		os.mkdir(output_directory + "Images/")
-		os.mkdir(output_directory + "Targets/")
+    dataset_name = "MassachusettsRoads"
+    link_file_images = "../Data/_Links/{}/Images.txt".format(dataset_name)
+    link_file_targets = "../Data/_Links/{}/Targets.txt".format(dataset_name)
+    output_directory = "../Data/{}/".format(dataset_name)
 
-	start_time = time.time()
-	#download_images(link_file_images, output_directory, "Images")
-	download_images(link_file_targets, output_directory, "Targets")
-	print("TOTAL TIME: {} minutes".format(round((time.time() - start_time)/60, 2)))
+    if not os.path.exists(output_directory):
+        os.mkdir(output_directory)
+        os.mkdir(output_directory + "Images/")
+        os.mkdir(output_directory + "Targets/")
+
+    start_time = time.time()
+    # download_images(link_file_images, output_directory, "Images")
+    download_images(link_file_targets, output_directory, "Targets")
+    print("TOTAL TIME: {} minutes".format(round((time.time() - start_time) / 60, 2)))

@@ -1,4 +1,5 @@
 import torch
+
 # import torch.nn as nn
 # import pdb
 from tqdm import tqdm
@@ -8,32 +9,47 @@ import wandb
 from sklearn.metrics import roc_curve, RocCurveDisplay, jaccard_score
 import matplotlib.pyplot as plt
 
-class_labels = {
-    0: "not road",
-    1: "road"
-}
+class_labels = {0: "not road", 1: "road"}
 
 
-def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
-          epochs=4, warmup=0, model_name="first_check.pth", device=torch.device("cpu"),
-          wandb_log=False, save_path="./"):
+def train(
+    model,
+    train_dataset,
+    val_dataset,
+    loss,
+    optimizer,
+    scheduler,
+    epochs=4,
+    warmup=0,
+    model_name="first_check.pth",
+    device=torch.device("cpu"),
+    wandb_log=False,
+    save_path="./",
+):
     loss_min = torch.tensor(1e10)  # Min loss for comparison and saving best models
     for epoch in tqdm(range(epochs)):
         print(f"Epoch {epoch} training started.")
         train_epoch(model, train_dataset, optimizer, loss, device, epoch, wandb_log)
         print(f"Epoch {epoch} validation started.")
         is_last_epoch = epoch == epochs - 1
-        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch)
+        loss_val = val_epoch(
+            model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch
+        )
         if loss_val < loss_min:  # Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'training_loss': loss_val,
-            }, save_path + model_name)
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "training_loss": loss_val,
+                },
+                save_path + model_name,
+            )
         if epoch > warmup:
-            scheduler.step(loss_val)  # Scheduler changes learning rate based on criterion
+            scheduler.step(
+                loss_val
+            )  # Scheduler changes learning rate based on criterion
 
     if wandb_log:
         num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -47,7 +63,6 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb
     """
     model.train()
     for idx, batch in enumerate(tqdm(train_dataset)):
-        # pdb.set_trace()
         optimizer.zero_grad()
         images, masks = batch
         images = images.to(device)
@@ -68,9 +83,13 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb
 
 
 def wb_mask(bg_img, pred_mask, true_mask):
-    return wandb.Image(bg_img, masks={
-        "prediction": {"mask_data": pred_mask, "class_labels": class_labels},
-        "ground truth": {"mask_data": true_mask, "class_labels": class_labels}})
+    return wandb.Image(
+        bg_img,
+        masks={
+            "prediction": {"mask_data": pred_mask, "class_labels": class_labels},
+            "ground truth": {"mask_data": true_mask, "class_labels": class_labels},
+        },
+    )
 
 
 def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_epoch):
@@ -93,17 +112,22 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             out = model(images)
             out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
-            loss_val += (loss / len (val_dataset))
+            loss_val += loss / len(val_dataset)
 
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
             for k, v in iou_dict.items():
                 pred = np.where(out.cpu().numpy().reshape(-1, 1) >= k, 1, 0)
-                iou_dict[k] += (jaccard_score(pred, tar) / len(val_dataset))
+                iou_dict[k] += jaccard_score(pred, tar) / len(val_dataset)
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
-                out_road_vals = torch.reshape((out * masks.unsqueeze(1)), (1, shape)).squeeze(0).cpu().numpy()
+                out_road_vals = (
+                    torch.reshape((out * masks.unsqueeze(1)), (1, shape))
+                    .squeeze(0)
+                    .cpu()
+                    .numpy()
+                )
                 output_all_vals = np.concatenate((output_all_vals, out_road_vals))
 
                 out_road_vals = out_road_vals[out_road_vals.nonzero()]
@@ -117,12 +141,16 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
 
                 for i in range(ct):
                     pred_mask = torch.reshape(outs[i], (400, 400)).cpu().numpy()
-                    mask_list.append(wb_mask(images[i], pred_mask, masks[i].cpu().numpy()))
+                    mask_list.append(
+                        wb_mask(images[i], pred_mask, masks[i].cpu().numpy())
+                    )
                     heatmap_list.append(wandb.Image(images[i]))
                     heatmap_list.append(wandb.Image(masks[i].cpu()))
                     heatmap_list.append(wandb.Image(out[i].cpu()))
 
-                wandb.log({"Predictions": mask_list, "Prediction Heat Maps": heatmap_list})
+                wandb.log(
+                    {"Predictions": mask_list, "Prediction Heat Maps": heatmap_list}
+                )
 
     if wandb_log:
         validation_iou_log = {}
@@ -133,13 +161,17 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
         wandb.log(validation_iou_log)
 
         if is_last_epoch:
-            wandb.run.summary.update({'final_prediction_roads': wandb.Histogram(output_road_vals)})
-            wandb.run.summary.update({'final_prediction_all': wandb.Histogram(output_all_vals)})
+            wandb.run.summary.update(
+                {"final_prediction_roads": wandb.Histogram(output_road_vals)}
+            )
+            wandb.run.summary.update(
+                {"final_prediction_all": wandb.Histogram(output_all_vals)}
+            )
 
     return loss_val
 
 
-def test(model, test_dataloader, device, method='thres', thres=0.5):
+def test(model, test_dataloader, device, method="thres", thres=0.5):
     model.eval()
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
@@ -155,7 +187,7 @@ def test(model, test_dataloader, device, method='thres', thres=0.5):
                 out = np.array(out >= thres, dtype=out_dtype)
             else:
                 out = np.around(out)
-            plt.imsave('test/predictions/' + fname[0], out)
+            plt.imsave("test/predictions/" + fname[0], out)
 
 
 def val_plot_auroc(model, val_dataset, device, name):
@@ -173,7 +205,7 @@ def val_plot_auroc(model, val_dataset, device, name):
             masks_all = np.concatenate((masks_all, masks))
 
     RocCurveDisplay.from_predictions(masks_all, out_all, name=name)
-    plt.savefig(name + '.png')
+    plt.savefig(name + ".png")
     return plt
 
 

@@ -5,7 +5,9 @@ import numpy as np
 
 
 class RoadCIL(Dataset):
-    def __init__(self, img_dir, mask_dir=None, training=False, transform=None, use="old"):
+    def __init__(
+        self, img_dir, mask_dir=None, training=False, transform=None, use="old"
+    ):
         self.img_dir = img_dir + "/images/"
         if mask_dir is None:
             self.mask_dir = img_dir
@@ -13,13 +15,6 @@ class RoadCIL(Dataset):
         self.training = training
         self.transform = transform
         self.images = os.listdir(self.img_dir)
-        # if not training:
-        #     use = "both"
-        # self.use = use
-        # if use == "old":
-        #     self.images = [x for x in self.images if ".tiff" not in x]
-        # elif use == "new":
-        #     self.images = [x for x in self.images if ".tiff" in x]
 
     def __len__(self):
         return len(self.images)

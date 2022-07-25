@@ -1,6 +1,7 @@
 from torch import nn
 import torch
 
+
 class encoding_block(nn.Module):
     """
     Convolutional batch norm block with relu activation (main block used in the encoding steps)

@@ -5,3 +5,4 @@ __pycache__/*
 First_check.pth
 .ipynb_checkpoints/*
 wandb/*
+*.png

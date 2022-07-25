@@ -22,15 +22,21 @@ class ResUnet(nn.Module):
         self.bridge = ResidualConv(filters[2], filters[3], 2, 1)
 
         # self.upsample_1 = Upsample(filters[3], filters[3], 2, 2)
-        self.upsample_1 = nn.ConvTranspose2d(filters[3], filters[3], kernel_size=2, stride=2)
+        self.upsample_1 = nn.ConvTranspose2d(
+            filters[3], filters[3], kernel_size=2, stride=2
+        )
         self.up_residual_conv1 = ResidualConv(filters[3] + filters[2], filters[2], 1, 1)
 
         # self.upsample_2 = Upsample(filters[2], filters[2], 2, 2)
-        self.upsample_2 = nn.ConvTranspose2d(filters[2], filters[2], kernel_size=2, stride=2)
+        self.upsample_2 = nn.ConvTranspose2d(
+            filters[2], filters[2], kernel_size=2, stride=2
+        )
         self.up_residual_conv2 = ResidualConv(filters[2] + filters[1], filters[1], 1, 1)
 
         # self.upsample_3 = Upsample(filters[1], filters[1], 2, 2)
-        self.upsample_3 = nn.ConvTranspose2d(filters[1], filters[1], kernel_size=2, stride=2)
+        self.upsample_3 = nn.ConvTranspose2d(
+            filters[1], filters[1], kernel_size=2, stride=2
+        )
         self.up_residual_conv3 = ResidualConv(filters[1] + filters[0], filters[0], 1, 1)
 
         self.output_layer = nn.Sequential(
@@ -87,14 +93,3 @@ class ResidualConv(nn.Module):
 
     def forward(self, x):
         return self.conv_block(x) + self.conv_skip(x)
-
-# class Upsample(nn.Module):
-#     def __init__(self, input_dim, output_dim, kernel, stride):
-#         super(Upsample, self).__init__()
-#
-#         self.upsample = nn.ConvTranspose2d(
-#             input_dim, output_dim, kernel_size=kernel, stride=stride
-#         )
-#
-#     def forward(self, x):
-#         return self.upsample(x)

@@ -14,16 +14,23 @@ class DeepLabHead(nn.Sequential):
             nn.Conv2d(256, 256, 3, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(256, num_classes, 1)
+            nn.Conv2d(256, num_classes, 1),
         )
 
 
 class ASPPConv(nn.Sequential):
     def __init__(self, in_channels, out_channels, dilation):
         modules = [
-            nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False),
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                3,
+                padding=dilation,
+                dilation=dilation,
+                bias=False,
+            ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
         ]
         super(ASPPConv, self).__init__(*modules)
 
@@ -34,24 +41,26 @@ class ASPPPooling(nn.Sequential):
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(in_channels, out_channels, 1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
         )
 
     def forward(self, x):
         size = x.shape[-2:]
         x = super(ASPPPooling, self).forward(x)
-        return F.interpolate(x, size=size, mode='bilinear', align_corners=False)
+        return F.interpolate(x, size=size, mode="bilinear", align_corners=False)
 
 
 class ASPP(nn.Module):
     def __init__(self, in_channels, atrous_rates):
         super(ASPP, self).__init__()
         out_channels = 256
-        modules = [nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU()
-        )]
+        modules = [
+            nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(),
+            )
+        ]
 
         rate1, rate2, rate3 = tuple(atrous_rates)
         modules.append(ASPPConv(in_channels, out_channels, rate1))
@@ -98,7 +107,7 @@ class ResnetDilated(nn.Module):
 
     def _nostride_dilate(self, m, dilate):
         classname = m.__class__.__name__
-        if classname.find('Conv') != -1:
+        if classname.find("Conv") != -1:
             if m.stride == (2, 2):
                 m.stride = (1, 1)
                 if m.kernel_size == (3, 3):
@@ -121,21 +130,25 @@ class ResnetDilated(nn.Module):
 
 
 class MTLDeepLabv3(nn.Module):
-    def __init__(self, tasks= {'seg':1}):
+    def __init__(self, tasks={"seg": 1}):
         super(MTLDeepLabv3, self).__init__()
         backbone = ResnetDilated(resnet.resnet50())
         ch = [256, 512, 1024, 2048]
 
         self.tasks = tasks
 
-        self.shared_conv = nn.Sequential(backbone.conv1, backbone.bn1, backbone.relu1, backbone.maxpool)
+        self.shared_conv = nn.Sequential(
+            backbone.conv1, backbone.bn1, backbone.relu1, backbone.maxpool
+        )
         self.shared_layer1 = backbone.layer1
         self.shared_layer2 = backbone.layer2
         self.shared_layer3 = backbone.layer3
         self.shared_layer4 = backbone.layer4
 
         # Define task-specific decoders using ASPP modules
-        self.decoders = nn.ModuleList([DeepLabHead(ch[-1], self.tasks[t]) for t in self.tasks])
+        self.decoders = nn.ModuleList(
+            [DeepLabHead(ch[-1], self.tasks[t]) for t in self.tasks]
+        )
 
     def forward(self, x):
         _, _, im_h, im_w = x.shape
@@ -150,19 +163,25 @@ class MTLDeepLabv3(nn.Module):
         # Task specific decoders
         out = [0 for _ in self.tasks]
         for i, t in enumerate(self.tasks):
-            out[i] = F.interpolate(self.decoders[i](x), size=[im_h, im_w], mode='bilinear', align_corners=True)
-            if t == 'normal':
+            out[i] = F.interpolate(
+                self.decoders[i](x),
+                size=[im_h, im_w],
+                mode="bilinear",
+                align_corners=True,
+            )
+            if t == "normal":
                 out[i] = out[i] / torch.norm(out[i], p=2, dim=1, keepdim=True)
-        return out[0] ## Just for our case
+        return out[0]  ## Just for our case
 
     def shared_modules(self):
-        return [self.shared_conv,
-                self.shared_layer1,
-                self.shared_layer2,
-                self.shared_layer3,
-                self.shared_layer4]
+        return [
+            self.shared_conv,
+            self.shared_layer1,
+            self.shared_layer2,
+            self.shared_layer3,
+            self.shared_layer4,
+        ]
 
     def zero_grad_shared_modules(self):
         for mm in self.shared_modules():
             mm.zero_grad()
-
