@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import pdb
-
-
+import numpy.typing as npt
+import numpy as np
 class GeneralizedDiceLoss(nn.Module):
     def __init__(self, epsilon=1e-9):
         super(GeneralizedDiceLoss, self).__init__()
@@ -28,7 +28,7 @@ class GeneralizedDiceLoss(nn.Module):
         return 1.0 - dice
 
 
-def WeightedBCE(input, mask, weight=2):
+def WeightedBCE(input: torch.Tensor, mask: torch.Tensor, weight: int=2)-> torch.Tensor:
     """
     Considers a weight to the roads.
     Slight changes can incorporate it for any loss actually. Not sure about the local dice focal loss
@@ -38,7 +38,7 @@ def WeightedBCE(input, mask, weight=2):
     return torch.sum(loss_weighted)
 
 
-def WeightedBCE2(prediction, label):
+def WeightedBCE2(prediction: torch.Tensor, label: torch.Tensor)-> torch.Tensor:
 
     label = label.long()
     mask = label.float()
@@ -57,7 +57,7 @@ def WeightedBCE2(prediction, label):
         return cost
 
 
-def BorderLossBCE(input, mask, weight=2):
+def BorderLossBCE(input: torch.Tensor, mask: torch.Tensor, weight: int=2) -> torch.Tensor:
     """
     Consider a weight to the borders. Same as WeightedBCE for modularity
     """
@@ -75,7 +75,7 @@ def BorderLossBCE(input, mask, weight=2):
     return torch.sum(loss_weighted)
 
 
-def FocalLoss(input, mask, weight=2, gamma=2):
+def FocalLoss(input: torch.Tensor, mask: torch.Tensor, weight: int =2, gamma: int=2) -> torch.Tensor:
     p_t = input * mask + (1 - input) * (1 - mask)
     ce_loss = nn.functional.binary_cross_entropy(input, mask, reduction="none")
     loss_init = ce_loss * ((1 - p_t) ** gamma)
@@ -83,7 +83,7 @@ def FocalLoss(input, mask, weight=2, gamma=2):
     return torch.sum(loss_weighted)
 
 
-def DiceLoss(input, mask):
+def DiceLoss(input: torch.Tensor, mask: torch.Tensor)-> torch.Tensor:
     nr = 1 + torch.sum(2 * input * mask, (1, 2, 3))
     dr = 1 + torch.sum(input + mask, (1, 2, 3))
     dice_coeff = nr / dr
@@ -91,7 +91,7 @@ def DiceLoss(input, mask):
     return dice_loss
 
 
-def TverskyLoss(input, mask, weight=0.75):
+def TverskyLoss(input: torch.Tensor, mask: torch.Tensor, weight: float =0.75):
     nr = 1 + torch.sum(input * mask, (1, 2, 3))
     dr = 1 + torch.sum(
         input * mask + weight * (1 - input) * mask + (1 - weight) * input * (1 - mask),
