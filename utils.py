@@ -137,7 +137,7 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     return loss_val
 
 
-def test(model, test_dataloader, device, method='thres', thres=0.5):
+def test(model, test_dataloader, device, method='thres', thres=0.7, post_processing_model=None):
     model.eval()
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
@@ -153,7 +153,12 @@ def test(model, test_dataloader, device, method='thres', thres=0.5):
                 out = np.array(out >= thres, dtype=out_dtype)
             else:
                 out = np.around(out)
+            if post_processing_model is not None:
+                score_pp = post_processing_model(out)
+                out_pp = torch.reshape(torch.sigmoid(score_pp).cpu(), (400, 400)).numpy()
+                final = np.array(out_pp >= thres, dtype=out.dtype)
             plt.imsave('test/predictions/' + fname[0], out)
+            plt.imsave('test/predictions_post_processed/' + fname[0], final)
 
 
 def val_plot_auroc(model, val_dataset, device, name):
