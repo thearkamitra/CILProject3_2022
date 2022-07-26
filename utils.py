@@ -154,12 +154,13 @@ def test(model, test_dataloader, device, pred_transform=None, method='thres', th
             else:
                 out = np.around(out)
             if post_model is not None:
-                pred = pred_transform(image=out)["image"]
+                pred = pred_transform(image=out)["image"].unsqueeze(0)
+                pred = pred.to(device)
                 score_pp = post_model(pred)
                 out_pp = torch.reshape(torch.sigmoid(score_pp).cpu(), (400, 400)).numpy()
                 final = np.array(out_pp >= thres, dtype=out.dtype)
+                plt.imsave('test/predictions_post_processed/' + fname[0], final)
             plt.imsave('test/predictions/' + fname[0], out)
-            plt.imsave('test/predictions_post_processed/' + fname[0], final)
 
 
 def val_plot_auroc(model, val_dataset, device, name):
