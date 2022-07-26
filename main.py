@@ -79,6 +79,7 @@ def main():
     parser.add_argument("--wandb", action='store_true')
     parser.add_argument("--pretrain", action='store_true')
     parser.add_argument("--post_process", action='store_true')
+    parser.add_argument("--post_process_test", action='store_true')
     parser.add_argument("-l", "--loss", type=str, choices=["dice", "wbce", "wbce2", "bbce", "focal", "tv"], default="dice")
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
     parser.add_argument("-sp", "--save_path", type=str, default="./")
@@ -190,7 +191,11 @@ def main():
 
     elif args.cmd == "test":
         model = model.to(device)
-        test(model, test_dataloader, device)
+        if args.post_process_test:
+            post_processing_model = post_processing_model.to(device)
+            test(model, test_dataloader, device, post_processing_model)
+        else:
+            test(model, test_dataloader, device)
 
     elif args.cmd == "valauroc":
         model = model.to(device)
