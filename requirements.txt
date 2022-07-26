@@ -1,4 +1,4 @@
-albumentations==0.4.6
+albumentations==1.2.1
 einops==0.4.1
 torchvision
 wandb
