@@ -137,7 +137,7 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     return loss_val
 
 
-def test(model, test_dataloader, device, method='thres', thres=0.7, post_processing_model=None):
+def test(model, test_dataloader, device, pred_transform=None, method='thres', thres=0.7, post_model=None):
     model.eval()
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
@@ -153,8 +153,9 @@ def test(model, test_dataloader, device, method='thres', thres=0.7, post_process
                 out = np.array(out >= thres, dtype=out_dtype)
             else:
                 out = np.around(out)
-            if post_processing_model is not None:
-                score_pp = post_processing_model(out)
+            if post_model is not None:
+                pred = pred_transform(image=out)["image"]
+                score_pp = post_model(pred)
                 out_pp = torch.reshape(torch.sigmoid(score_pp).cpu(), (400, 400)).numpy()
                 final = np.array(out_pp >= thres, dtype=out.dtype)
             plt.imsave('test/predictions/' + fname[0], out)

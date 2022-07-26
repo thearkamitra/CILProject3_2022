@@ -193,7 +193,7 @@ def main():
         model = model.to(device)
         if args.post_process_test:
             post_processing_model = post_processing_model.to(device)
-            test(model, test_dataloader, device, post_processing_model)
+            test(model, test_dataloader, device, post_model=post_processing_model)
         else:
             test(model, test_dataloader, device)
 
