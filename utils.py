@@ -187,7 +187,7 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
                 out = np.array(out >= thres, dtype=out_dtype)
             else:
                 out = np.around(out)
-            plt.imsave("test/predictions/" + fname[0], out)
+            plt.imsave("test/predictions/" + fname[0], out, cmap='gray')
 
 
 def val_plot_auroc(model, val_dataset, device, name):
