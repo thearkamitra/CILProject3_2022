@@ -35,7 +35,7 @@ def WeightedBCE(input: torch.Tensor, mask: torch.Tensor, weight: int=2)-> torch.
     """
     loss_init = nn.functional.binary_cross_entropy(input, mask, reduction="none")
     loss_weighted = loss_init * (1 - mask) + mask * weight * loss_init
-    return torch.sum(loss_weighted)
+    return torch.mean(loss_weighted)
 
 
 def WeightedBCE2(prediction: torch.Tensor, label: torch.Tensor)-> torch.Tensor:
@@ -72,7 +72,7 @@ def BorderLossBCE(input: torch.Tensor, mask: torch.Tensor, weight: int=2) -> tor
     is_border = torch.where(is_border < 9, 1, 0)
     is_border = is_border * mask
     loss_weighted = loss_init * (1 - is_border) + is_border * weight * loss_init
-    return torch.sum(loss_weighted)
+    return torch.mean(loss_weighted)
 
 
 def FocalLoss(input: torch.Tensor, mask: torch.Tensor, weight: int =2, gamma: int=2) -> torch.Tensor:
