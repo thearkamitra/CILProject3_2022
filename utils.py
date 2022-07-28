@@ -8,6 +8,8 @@ from PIL import Image
 import wandb
 from sklearn.metrics import roc_curve, RocCurveDisplay, jaccard_score
 import matplotlib.pyplot as plt
+import cv2
+import os
 
 class_labels = {0: "not road", 1: "road"}
 
@@ -172,6 +174,12 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
 
 
 def test(model, test_dataloader, device, method="thres", thres=0.5):
+    # Ensure folders are created:
+    if not os.path.exists('test/predictions'):
+        os.makedirs('test/predictions')
+    if not os.path.exists('test/predictions_cont'):
+        os.makedirs('test/predictions_cont')
+
     model.eval()
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
@@ -187,7 +195,23 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
                 out = np.array(out >= thres, dtype=out_dtype)
             else:
                 out = np.around(out)
-            plt.imsave("test/predictions/" + fname[0], out, cmap='gray')
+
+            int_out = out.astype(np.uint8) * 255
+            plt.imsave("test/predictions/" + fname[0], int_out, cmap='gray')
+            
+            small_contour_removed_out = remove_small_contours(int_out)
+            plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
+
+def remove_small_contours(img):
+    _ret, thresh = cv2.threshold(img, 127, 255, 0)
+    contours, _hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    mask = np.ones(img.shape[:2], dtype="uint8") * 255
+    for c in contours:
+        if(cv2.contourArea(c) < 350):
+            cv2.drawContours(mask, [c], -1, 0, -1)
+
+    new_pred = cv2.bitwise_and(img, img, mask=mask)
+    return new_pred
 
 
 def val_plot_auroc(model, val_dataset, device, name):
