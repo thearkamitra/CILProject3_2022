@@ -80,7 +80,7 @@ def FocalLoss(input: torch.Tensor, mask: torch.Tensor, weight: int =2, gamma: in
     ce_loss = nn.functional.binary_cross_entropy(input, mask, reduction="none")
     loss_init = ce_loss * ((1 - p_t) ** gamma)
     loss_weighted = loss_init * (1 - mask) + mask * weight * loss_init
-    return torch.sum(loss_weighted)
+    return torch.mean(loss_weighted)
 
 
 def DiceLoss(input: torch.Tensor, mask: torch.Tensor)-> torch.Tensor:
