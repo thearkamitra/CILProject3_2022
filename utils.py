@@ -184,23 +184,43 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
             image = image.to(device)
-            score = model(image)
-            out = torch.reshape(torch.sigmoid(score).cpu(), (400, 400)).numpy()
-            if method == "thres":
-                out_dtype = out.dtype
-                out = np.array(out >= thres, dtype=out_dtype)
-            elif method == "dynamic":
-                thres = np.mean(out)
-                out_dtype = out.dtype
-                out = np.array(out >= thres, dtype=out_dtype)
-            else:
-                out = np.around(out)
+            out_normal = get_output_from_image(model, image).numpy()
+            # plt.imsave("test/p1/" + fname[0], round_output(out_normal,method,thres), cmap='gray')
+
+            image_hflip = torch.flip(image,[3])
+            out_hflip = get_output_from_image(model, image_hflip)
+            out_hflip = torch.flip(out_hflip, [1]).numpy()
+            # plt.imsave("test/p2/" + fname[0], round_output(out_hflip,method,thres), cmap='gray')
+
+            image_vflip = torch.flip(image,[2])
+            out_vflip = get_output_from_image(model, image_vflip)
+            out_vflip = torch.flip(out_vflip, [0]).numpy()
+            # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
+
+            out = np.mean(np.array([out_normal, out_hflip, out_vflip]), (0))
+            out = round_output(out, method, thres)
 
             int_out = out.astype(np.uint8) * 255
             plt.imsave("test/predictions/" + fname[0], int_out, cmap='gray')
             
             small_contour_removed_out = remove_small_contours(int_out)
             plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
+
+def get_output_from_image(model, image):
+    score = model(image)
+    return torch.reshape(torch.sigmoid(score).cpu(), (400, 400))
+
+def round_output(out, method, thres):
+    if method == "thres":
+        out_dtype = out.dtype
+        out = np.array(out >= thres, dtype=out_dtype)
+    elif method == "dynamic":
+        thres = np.mean(out)
+        out_dtype = out.dtype
+        out = np.array(out >= thres, dtype=out_dtype)
+    else:
+        out = np.around(out)
+    return out
 
 def remove_small_contours(img):
     _ret, thresh = cv2.threshold(img, 127, 255, 0)
