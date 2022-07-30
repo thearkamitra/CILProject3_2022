@@ -1,5 +1,5 @@
 import torch.nn as nn
-from torchvision.models.segmentation import fcn_resnet50, deeplabv3_resnet101
+from torchvision.models.segmentation import fcn_resnet50, fcn_resnet101, deeplabv3_resnet101
 from segmentation_models_pytorch import  Unet
 from models import deeplabv3, unet, segformer, resunet
 
@@ -32,9 +32,13 @@ class Baseline(nn.Module):
 
 
 class FCN_res(nn.Module):
-    def __init__(self, n_classes=1):
+    def __init__(self, n_classes=1, n_layers=50, in_channels=3):
         super().__init__()
-        self.model = fcn_resnet50(pretrained=True)
+        if n_layers==101:
+            self.model = fcn_resnet101(pretrained=True)
+        else:
+            self.model = fcn_resnet50(pretrained=True)
+        self.model.backbone.conv1 = nn.Conv2d(in_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.model.classifier[4] = nn.Conv2d(512, n_classes, kernel_size=(1, 1), stride=(1, 1))
         self.model.aux_classifier[4] = nn.Conv2d(256, n_classes, kernel_size=(1, 1), stride=(1, 1))
 

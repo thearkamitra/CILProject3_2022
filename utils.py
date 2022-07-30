@@ -10,6 +10,8 @@ from sklearn.metrics import roc_curve, RocCurveDisplay, jaccard_score
 import matplotlib.pyplot as plt
 import cv2
 import os
+import albumentations as Alb
+from albumentations.pytorch import ToTensorV2
 
 class_labels = {0: "not road", 1: "road"}
 
@@ -173,12 +175,14 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     return loss_val
 
 
-def test(model, test_dataloader, device, method="thres", thres=0.5):
+def test(model, test_dataloader, device, post_proc, method="thres", thres=0.7):
     # Ensure folders are created:
     if not os.path.exists('test/predictions'):
         os.makedirs('test/predictions')
     if not os.path.exists('test/predictions_cont'):
         os.makedirs('test/predictions_cont')
+    if not os.path.exists('test/predictions_post_proc'):
+        os.makedirs('test/predictions_post_proc')
 
     model.eval()
     with torch.no_grad():
@@ -206,6 +210,20 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
             out_rotr = torch.rot90(out_rotr, 1, [0,1]).numpy()
 
             out = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
+
+            if post_proc != "":
+                transform = Alb.Compose(
+                    [
+                        ToTensorV2()
+                    ]
+                )
+                pred = transform(image=out)["image"].unsqueeze(0)
+                pred = pred.to(device)
+                score_pp = post_proc(pred)
+                out_pp = torch.reshape(torch.sigmoid(score_pp).cpu(), (400, 400)).numpy()
+                final = np.array(out_pp >= thres, dtype=out.dtype)
+                plt.imsave('test/predictions_post_proc/' + fname[0], final)
+
             out = round_output(out, method, thres)
 
             int_out = out.astype(np.uint8) * 255
@@ -213,6 +231,11 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
             
             small_contour_removed_out = remove_small_contours(int_out)
             plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
+
+
+
+
+
 
 def get_output_from_image(model, image):
     score = model(image)
