@@ -101,9 +101,16 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     model.eval()
     loss_val = 0
 
+    # Setup for IOU curves for different thresholds
     iou_thresholds = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     ious = [0] * len(iou_thresholds)
     iou_dict = dict(zip(iou_thresholds, ious))
+
+    # Setup for IOU curves for different contour removal thresholds
+    iou_contours = [150,200,250,300,350,400,450,500]
+    cont_ious = [0] * len(iou_contours)
+    iou_conts_dict = dict(zip(iou_contours, cont_ious))
+
     output_road_vals = np.array([])
     output_all_vals = np.array([])
     with torch.no_grad():
@@ -121,6 +128,11 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             for k, v in iou_dict.items():
                 pred = np.where(out.cpu().numpy().reshape(-1, 1) >= k, 1, 0)
                 iou_dict[k] += jaccard_score(pred, tar) / len(val_dataset)
+
+            for k,v in iou_conts_dict.items():
+                pred = np.where(out.cpu().numpy().reshape(-1, 1) >= 0.7, 255, 0)
+                cont_removed_pred = remove_small_contours(pred, k) / 255
+                iou_conts_dict[k] = jaccard_score(cont_removed_pred, tar) / len(val_dataset)
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -159,8 +171,13 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
         for k, v in iou_dict.items():
             validation_iou_log[f"val mIOU, threshold {k}"] = v
 
+        validation_iou_contour_log = {}
+        for k, v in iou_conts_dict.items():
+            validation_iou_contour_log[f"val mIOU, area {k}"] = v
+
+        wandb.log(validation_iou_log, commit=False)
+        wandb.log(validation_iou_contour_log, commit=False)
         wandb.log({"validation loss": loss_val, "epoch": epoch})
-        wandb.log(validation_iou_log)
 
         if is_last_epoch:
             wandb.run.summary.update(
@@ -230,12 +247,12 @@ def round_output(out, method, thres):
         out = np.around(out)
     return out
 
-def remove_small_contours(img):
+def remove_small_contours(img, area=250):
     _ret, thresh = cv2.threshold(img, 127, 255, 0)
     contours, _hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     mask = np.ones(img.shape[:2], dtype="uint8") * 255
     for c in contours:
-        if(cv2.contourArea(c) < 350):
+        if(cv2.contourArea(c) < area):
             cv2.drawContours(mask, [c], -1, 0, -1)
 
     new_pred = cv2.bitwise_and(img, img, mask=mask)
