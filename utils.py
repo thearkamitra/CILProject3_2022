@@ -130,8 +130,11 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
                 iou_dict[k] += jaccard_score(pred, tar) / len(val_dataset)
 
             for k,v in iou_conts_dict.items():
-                pred = np.where(out.cpu().numpy().reshape(-1, 1) >= 0.7, 255, 0)
-                cont_removed_pred = remove_small_contours(pred, k) / 255
+                pred = np.where(out.cpu().numpy() >= 0.7, 255, 0).astype(np.uint8)
+                cont_removed_pred = np.zeros((0,1))
+                for n in range(out.shape[0]):
+                    val = (remove_small_contours(pred[n,0], k) / 255.0).reshape(-1,1)
+                    cont_removed_pred = np.concatenate((cont_removed_pred, val))
                 iou_conts_dict[k] = jaccard_score(cont_removed_pred, tar) / len(val_dataset)
 
             if is_last_epoch:
