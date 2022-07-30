@@ -10,6 +10,7 @@ from sklearn.metrics import roc_curve, RocCurveDisplay, jaccard_score
 import matplotlib.pyplot as plt
 import cv2
 import os
+from sklearn.metrics import average_precision_score, f1_score
 
 class_labels = {0: "not road", 1: "road"}
 
@@ -104,6 +105,10 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     iou_thresholds = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     ious = [0] * len(iou_thresholds)
     iou_dict = dict(zip(iou_thresholds, ious))
+    accuracy = 0
+    mAP = 0
+    f1_weighted_avg = 0
+    f1_avg = 0
     output_road_vals = np.array([])
     output_all_vals = np.array([])
     with torch.no_grad():
@@ -116,11 +121,29 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             loss = loss_func(out, masks.unsqueeze(1))
             loss_val += loss / len(val_dataset)
 
+            # Compute validation metrics: iou, mAP, f1, and accuracy
+
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
             for k, v in iou_dict.items():
                 pred = np.where(out.cpu().numpy().reshape(-1, 1) >= k, 1, 0)
                 iou_dict[k] += jaccard_score(pred, tar) / len(val_dataset)
+
+            thresh = 0.7
+            pred = np.where(out.cpu().numpy().reshape(-1, 1) >= thresh, 1, 0)
+
+            # Compute accuracy
+            accuracy += np.mean(pred == tar) / len(val_dataset)
+
+            # Compute mAP
+            mAP += average_precision_score(tar, pred) / len(val_dataset)
+
+            # Compute F1 Score simple average within image ('macro')
+            f1_avg += f1_score(tar, pred, average='macro') / len(val_dataset)
+
+            # Compute F1 Score weighted average within image. Weights based on number of samples of each class
+            f1_weighted_avg += f1_score(tar, pred, average='weighted') / len(val_dataset)
+
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -155,12 +178,12 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
                 )
 
     if wandb_log:
-        validation_iou_log = {}
+        log_dict = {"validation loss": loss_val, "epoch": epoch, }
         for k, v in iou_dict.items():
-            validation_iou_log[f"val mIOU, threshold {k}"] = v
+            log_dict[f"val mIOU, threshold {k}"] = v
 
-        wandb.log({"validation loss": loss_val, "epoch": epoch})
-        wandb.log(validation_iou_log)
+        log_dict.update({"Accuracy": accuracy, "mAP": mAP, "F1 Score (unweighted)": f1_avg, "F1 Score (weighted)": f1_weighted_avg})
+        wandb.log(log_dict)
 
         if is_last_epoch:
             wandb.run.summary.update(
