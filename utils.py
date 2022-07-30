@@ -197,7 +197,15 @@ def test(model, test_dataloader, device, method="thres", thres=0.5):
             out_vflip = torch.flip(out_vflip, [0]).numpy()
             # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
 
-            out = np.mean(np.array([out_normal, out_hflip, out_vflip]), (0))
+            image_rotl = torch.rot90(image, 1, [2,3])
+            out_rotl = get_output_from_image(model, image_rotl)
+            out_rotl = torch.rot90(out_rotl, -1, [0,1]).numpy()
+
+            image_rotr = torch.rot90(image, -1, [2,3])
+            out_rotr = get_output_from_image(model, image_rotr)
+            out_rotr = torch.rot90(out_rotr, 1, [0,1]).numpy()
+
+            out = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
             out = round_output(out, method, thres)
 
             int_out = out.astype(np.uint8) * 255
