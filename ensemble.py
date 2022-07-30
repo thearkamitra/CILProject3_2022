@@ -74,10 +74,10 @@ def ensemble_test(model1_path, model2_path, model3_path, test_dataset, device, m
             model = model.to(device)
             out = test_without_thres(model, test_dataloader, device)
             out_list.append(out)
-            avg_out = np.mean(np.array(out_list), axis = 0)
-            final_output = round_output(avg_out, method, thres)
-            int_out = final_output.astype(np.uint8) * 255
-            plt.imsave(save_path + fname[0], int_out, cmap='gray')
+        avg_out = np.average(np.array(out_list), axis = 0) #Here can add weights if we think one model better than other (weighted mean)
+        final_output = round_output(avg_out, method, thres)
+        int_out = final_output.astype(np.uint8) * 255
+        plt.imsave(save_path + fname[0], int_out, cmap='gray')
   
 
 '''Run ensembling'''
