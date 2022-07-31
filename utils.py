@@ -124,7 +124,7 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             loss_val += loss / len(val_dataset)
             
             
-            print(out.shape)
+            print(out.shape[0])
 
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
