@@ -46,7 +46,7 @@ class RoadCIL(Dataset):
             return image, mask
 
 class RoadCILPostProcess(Dataset):
-    def __init__(self, img_dir, segmentation_model, segmentation_transform, pred_transform, device, thresh=0.5, mask_dir=None, training=False):
+    def __init__(self, img_dir, segmentation_model, segmentation_model2, segmentation_transform, pred_transform, device, thresh=0.7, mask_dir=None, training=False):
         self.img_dir = img_dir + "/images/"
         if mask_dir is None:
             self.mask_dir = img_dir
@@ -55,6 +55,7 @@ class RoadCILPostProcess(Dataset):
         self.pred_transform = pred_transform
         self.images = os.listdir(self.img_dir)
         self.model = segmentation_model
+        self.model2 = segmentation_model2
         self.thresh = thresh
         self.device = device
         self.seg_transform = segmentation_transform
@@ -72,8 +73,12 @@ class RoadCILPostProcess(Dataset):
             augmentation = self.seg_transform(image=image)
             image = augmentation["image"].unsqueeze(0)
             image = image.to(self.device)
-            score = self.model(image)
-            seg_pred = torch.reshape(torch.sigmoid(score).cpu(), (400, 400)).numpy()
+            score1 = self.model(image.clone())
+            score2 = self.model2(image.clone())
+
+            seg_pred1 = torch.reshape(torch.sigmoid(score1).cpu(), (400, 400)).numpy()
+            seg_pred2 = torch.reshape(torch.sigmoid(score2).cpu(), (400, 400)).numpy()
+            seg_pred = np.mean(np.array([seg_pred1, seg_pred2]), (0))
             seg_pred = np.array(seg_pred >= self.thresh, dtype=seg_pred.dtype)
 
         if self.training is False:

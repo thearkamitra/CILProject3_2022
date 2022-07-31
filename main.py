@@ -74,6 +74,8 @@ def main():
     parser.add_argument("--post_processing_modeltoload", type=str, default="")
     parser.add_argument("--model", type=str, default="fcn_res",
                         choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
+    parser.add_argument("--model2", type=str, default="fcn_res",
+                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
     parser.add_argument("--post_processing_model", type=str, default="fcn_res",
                         choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
     parser.add_argument("--wandb", action='store_true')
@@ -109,7 +111,7 @@ def main():
 
     # Set Model
     if args.post_processing_model == "fcn_res":
-        post_processing_model = FCN_res(n_classes, in_channels=1, pretrained=False)
+        post_processing_model = FCN_res(n_classes, in_channels=1, pretrained=True)
     if args.post_processing_model == "baseline":
         post_processing_model = Baseline(n_classes)
     if args.post_processing_model == "unet":
@@ -126,6 +128,8 @@ def main():
         post_processing_model = UNetSMP(n_classes, decoder_attention=True)
 
     model = model.to(device)
+    model2 = FCN_res(n_classes)
+    model2 = model2.to(device)
     post_processing_model = post_processing_model.to(device)
     # Load a model for add training, testing or validation
     if args.modeltoload != "":
@@ -138,9 +142,9 @@ def main():
     if args.post_process:
         assert args.modeltoload != "", "You must provide saved weights of a segmentation network in order to apply post-processing"
         dataset = RoadCILPostProcess("massachusetts-road-dataset" if args.pretrain else "training",
-                                      segmentation_model=model, device=device, segmentation_transform=test_transform,
+                                      segmentation_model=model, segmentation_model2=model2, device=device, segmentation_transform=test_transform,
                                       training=True, pred_transform=post_processing_train_transform)
-        test_dataset = RoadCILPostProcess("test", training=False, segmentation_model=model, device=device, segmentation_transform=test_transform, pred_transform=post_processing_test_transform)
+        test_dataset = RoadCILPostProcess("test", training=False, segmentation_model=model, segmentation_model2=model2, device=device, segmentation_transform=test_transform, pred_transform=post_processing_test_transform)
 
     else:
         dataset = RoadCIL("massachusetts-road-dataset" if args.pretrain else "training", training=True,
