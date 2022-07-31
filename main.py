@@ -122,6 +122,7 @@ def main():
         images = np.array(images)
         masks = np.array(masks)
         print(images.shape)
+        print(images[0])
         images = np.swapaxes(images, 0,2)
         print(images.shape)
         plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx) + '.png', images)
