@@ -121,8 +121,8 @@ def main():
         images, masks = batch
         images = np.array(images)
         masks = np.array(masks)
-        plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx), images)
-        plt.imsave('/content/drive/MyDrive/CIL/val/masks/mask_'+ str(idx), masks)
+        plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx), images, format='png')
+        plt.imsave('/content/drive/MyDrive/CIL/val/masks/mask_'+ str(idx), masks, format='png')
     
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     n_classes = args.num_classes
