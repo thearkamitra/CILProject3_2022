@@ -115,8 +115,8 @@ def main():
     
     for idx, batch in enumerate(tqdm(validation_dataset)):
         images, masks = batch
-        plt.imsave('image_'+ str(idx) + '.png', images)
-        plt.imsave('mask_'+ str(idx) + '.png', masks)
+        plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx) + '.png', images)
+        plt.imsave('/content/drive/MyDrive/CIL/val/masks/mask_'+ str(idx) + '.png', masks)
     
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     n_classes = args.num_classes
