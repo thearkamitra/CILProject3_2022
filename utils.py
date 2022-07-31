@@ -219,13 +219,13 @@ def test(model1, model2, test_dataloader, device, post_proc, method="thres", thr
 
             out1 = np.mean(np.array([out_normal1, out_hflip1, out_vflip1, out_rotl1, out_rotr1]), (0))
 
-            out1 = round_output(out1, method, thres)
-
-            int_out1 = out1.astype(np.uint8) * 255
-            plt.imsave("test/predictions/" + fname[0], int_out1, cmap='gray')
-            
-            small_contour_removed_out = remove_small_contours(int_out1)
-            plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
+            # out1 = round_output(out1, method, thres)
+            #
+            # int_out1 = out1.astype(np.uint8) * 255
+            # plt.imsave("test/predictions/" + fname[0], int_out1, cmap='gray')
+            #
+            # small_contour_removed_out = remove_small_contours(int_out1)
+            # plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
 
 
             # Model 2 TTA
@@ -254,12 +254,13 @@ def test(model1, model2, test_dataloader, device, post_proc, method="thres", thr
 
             out2 = np.mean(np.array([out_normal2, out_hflip2, out_vflip2, out_rotl2, out_rotr2]), (0))
 
-            out2 = round_output(out2, method, thres)
-
-            int_out2 = out2.astype(np.uint8) * 255
-            plt.imsave("test/predictionsmodel2/" + fname[0], int_out2, cmap='gray')
+            # out2 = round_output(out2, method, thres)
+            #
+            # int_out2 = out2.astype(np.uint8) * 255
+            # plt.imsave("test/predictionsmodel2/" + fname[0], int_out2, cmap='gray')
 
             combined_out = np.mean(np.array([out1, out2]), (0))
+            combined_out = round_output(combined_out, method, thres)
 
             if post_proc is not None:
                 
@@ -291,10 +292,6 @@ def test(model1, model2, test_dataloader, device, post_proc, method="thres", thr
                 combined_pp = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
 
                 combined_pp_rounded = round_output(combined_pp, method, thres)
-
-
-                # out_pp = get_output_from_image(post_proc, pred_pp).numpy()
-                # out_pp_rounded = round_output(out_pp, method, thres)
 
                 int_out_pp = combined_pp_rounded.astype(np.uint8) * 255
                 plt.imsave("test/predictions_post_proc/" + fname[0], int_out_pp, cmap='gray')
