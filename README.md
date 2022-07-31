@@ -36,6 +36,14 @@ Training can be additionally configured using the following commands:
 
 Post training the model is saved as a pth file in the given save path location.
 
+## Running a pretrain on the model
+As part of this, we also created an additional dataset based on the Massachusetts Road Dataset. It can be downloaded here: https://drive.google.com/file/d/1yof6dAgppz67uQD2CXnTVX2Sru3DfRbS/view?usp=sharing
+
+To pretrain the model against this, you need to first run the training using the "--pretrain" param. Once done, you can used that saved model to then fine tune / train on the original task dataset.
+
+Example:
+`python main.py --cmd train --model deeplabv3 --pretrain`
+
 
 ## Making Predictions
 To make predictions, you should have the pth file from a model previously trained using this program.  With that you can use the 'test' command parameter to run the model for predictions, like:
@@ -49,3 +57,9 @@ The predictions can be additionally configured using the following properties:
 - -model : Need to specify the same model as the one saved in the .pth file. Can be one of the following: baseline, fcn_res, unet, deeplabv3 and segformer
 
 You can view the predicted images in the 'test/predictions' folder
+
+### Using the ensemble network for prediction
+We additionally added an ensemble method to combine the predictions of multiple models. This was added as a separate file and can be run once you have trained different models already and have the saved weights. Unfortunately this does not take in parameters and needs to be edited manually with the saved model paths.
+Once updated you can run it using:
+
+`python ensemble.py`
