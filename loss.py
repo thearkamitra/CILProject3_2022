@@ -91,7 +91,7 @@ def DiceLoss(input: torch.Tensor, mask: torch.Tensor)-> torch.Tensor:
     return dice_loss
 
 
-def TverskyLoss(input: torch.Tensor, mask: torch.Tensor, weight: float =0.75):
+def TverskyLoss(input: torch.Tensor, mask: torch.Tensor, weight: float =0.25):
     nr = 1 + torch.sum(input * mask, (1, 2, 3))
     dr = 1 + torch.sum(
         input * mask + weight * (1 - input) * mask + (1 - weight) * input * (1 - mask),
