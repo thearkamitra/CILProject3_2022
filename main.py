@@ -13,6 +13,7 @@ from torch.utils.data import random_split, DataLoader
 import tqdm
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import numpy as np
 
 torch.manual_seed(42)
 
@@ -118,6 +119,8 @@ def main():
     
     for idx, batch in enumerate(tqdm(validation_dataset)):
         images, masks = batch
+        images = np.array(images)
+        masks = np.array(masks)
         print(images.shape)
         images = images.reshape([400,400,3])
         masks = masks.reshape([400,400,3])
