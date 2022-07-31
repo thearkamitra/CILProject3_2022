@@ -118,6 +118,8 @@ def main():
     
     for idx, batch in enumerate(tqdm(validation_dataset)):
         images, masks = batch
+        images = images.reshape([400,400,3])
+        masks = masks.reshape([400,400,3])
         print(images.shape)
         plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx) + '.png', images)
         plt.imsave('/content/drive/MyDrive/CIL/val/masks/mask_'+ str(idx) + '.png', masks)
