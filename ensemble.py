@@ -4,7 +4,10 @@ import numpy as np
 import os
 import cv2
 from torch.utils.data import random_split, DataLoader
+import matplotlib.pyplot as plt
 from dataset import *
+from main import *
+from model import *
 
 '''Defining fnc from main.py so as to not import (only one fnc needed)'''
 test_transform = Alb.Compose(
@@ -35,8 +38,16 @@ def test_without_thres(model, image, device):
         out_vflip = torch.flip(out_vflip, [0]).numpy()
         # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
 
-        out = np.mean(np.array([out_normal, out_hflip, out_vflip]), (0))
+        image_rotl = torch.rot90(image, 1, [2,3])
+        out_rotl = get_output_from_image(model, image_rotl)
+        out_rotl = torch.rot90(out_rotl, -1, [0,1]).numpy()
 
+        image_rotr = torch.rot90(image, -1, [2,3])
+        out_rotr = get_output_from_image(model, image_rotr)
+        out_rotr = torch.rot90(out_rotr, 1, [0,1]).numpy()
+
+        out = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
+                                                                                                                                                            
         return out
             
 def get_output_from_image(model, image):
@@ -57,23 +68,31 @@ def round_output(out, method, thres):
     return out
   
   
-def ensemble_test(model1_path, model2_path, model3_path, test_dataset, device, method, thres, save_path):
+def ensemble_test(fcn_path, deeplab_path, test_dataset, device, method, thres, save_path):
 
-    models = [model1_path, model2_path, model3_path]
-    '''Can add more models if needed'''
+    model_paths = [fcn_path, deeplab_path]
+    model_strs = ['fcn', 'deeplab_resnet']
     
-    if not os.path.exists('test/predictions_ensemble'):
-        os.makedirs('test/predictions_ensemble')
+    '''Can add more models if needed; especially SegFormer'''
+    
+    if not os.path.exists('test/predictions_ensemble_thres_0.6'):
+        os.makedirs('test/predictions_ensemble_thres_0.6')
         
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
         
     for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
         out_list = []
-        for model_path in models:
-            model.load_state_dict(torch.load(model_path)['model_state_dict'])
+        for model_path, model_str in zip(model_paths, model_strs):
+            if model_str == 'fcn':
+                model = FCN_res()
+            if model_str == 'deeplab_resnet':
+                model = DeepLabv3_Resnet101()
+            model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu"))["model_state_dict"])
             model = model.to(device)
-            out = test_without_thres(model, test_dataloader, device)
+            out = test_without_thres(model, image, device)
             out_list.append(out)
+            out_save = round_output(out, method, thres)
+            #plt.imsave("test/" + fname[0], int_out, cmap='gray')
         avg_out = np.average(np.array(out_list), axis = 0) #Here can add weights if we think one model better than other (weighted mean)
         final_output = round_output(avg_out, method, thres)
         int_out = final_output.astype(np.uint8) * 255
@@ -81,15 +100,13 @@ def ensemble_test(model1_path, model2_path, model3_path, test_dataset, device, m
   
 
 '''Run ensembling'''
-model_path1 = ''
-model_path2 = ''
-model_path3 = ''
-test_dataset = RoadCIL("insert_test_dataset_path", training=False, transform=test_transform)
+model1_path = 'fcn_res-dice-06-27_17-58.pth'
+model2_path = 'finetune-deeplabv3_resnet101-wbce2-07-25_00-35.pth'
+test_dataset = RoadCIL("test", training=False, transform=test_transform)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-thres = 0.7
-save_path = "test/predictions_ensemble/"
+thres = 0.6
+save_path = "test/predictions_ensemble_thres_0.6/"
 
 
 
-ensemble_test(model1_path, model2_path, model3_path, test_dataset, device, "thres", thres, save_path)
-
+ensemble_test(model1_path, model2_path, test_dataset, device, "thres", thres, save_path)
