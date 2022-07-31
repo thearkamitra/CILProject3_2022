@@ -18,13 +18,13 @@ class Baseline(nn.Module):
         super().__init__()
         self.model = nn.Sequential(nn.Conv2d(3, 4, 3, padding='valid'),
                                    nn.ReLU(),
-                                   nn.Conv2d(3, 32, 3, padding='valid'),
+                                   nn.Conv2d(4, 4, 3, padding='valid'),
                                    nn.ReLU(),
-                                   nn.Conv2d(32, 64, 3, padding='valid'),
+                                   nn.Conv2d(4, 8, 3, padding='valid'),
                                    nn.ReLU(),
-                                   nn.Conv2d(64, 32, 3, padding='valid'),
+                                   nn.Conv2d(8, 4, 3, padding='valid'),
                                    nn.ReLU(),
-                                   nn.Conv2d(32, n_classes, 3, padding='valid'),
+                                   nn.Conv2d(4, n_classes, 3, padding='valid'),
                                    )
 
     def forward(self, x):
