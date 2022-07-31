@@ -15,15 +15,15 @@ class_labels = {
 
 
 def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
-          epochs=4, warmup=0, model_name="first_check.pth", device=torch.device("cpu"),
+          epochs=4, new_architecture=False, warmup=0, model_name="first_check.pth", device=torch.device("cpu"),
           wandb_log=False, save_path="./"):
     loss_min = torch.tensor(1e10)  # Min loss for comparison and saving best models
     for epoch in tqdm(range(epochs)):
         print(f"Epoch {epoch} training started.")
-        train_epoch(model, train_dataset, optimizer, loss, device, epoch, wandb_log)
+        train_epoch(model, train_dataset, optimizer, loss, device, epoch, wandb_log, new_architecture)
         print(f"Epoch {epoch} validation started.")
         is_last_epoch = epoch == epochs - 1
-        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch)
+        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch, new_architecture)
         if loss_val < loss_min:  # Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
@@ -41,7 +41,7 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
         wandb.log({"ROC": roc_plt, "# Trainable Parameters": num_params})
 
 
-def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb_log):
+def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb_log, new_architecture=False):
     """
     Training per epoch
     """
@@ -52,8 +52,16 @@ def train_epoch(model, train_dataset, optimizer, loss_func, device, epoch, wandb
         images = images.to(device)
         masks = masks.to(device)
         out = model(images)
-        out = torch.sigmoid(out)
+        if new_architecture:
+            seg_out = out[:,1:,:,:]
+            out = torch.sigmoid(out[:, 0, :, :])
+        else:
+            out = torch.sigmoid(out)
         loss = loss_func(out, masks.unsqueeze(1))
+        
+        if new_architecture:
+            loss += 0.001*(images- seg_out).pow(2).mean()
+        
         loss.backward()
         optimizer.step()  # Weights are updated
         # get_auroc(out, masks.unsqueeze(1))
@@ -71,7 +79,7 @@ def wb_mask(bg_img, pred_mask, true_mask):
         "ground truth": {"mask_data": true_mask, "class_labels": class_labels}})
 
 
-def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_epoch):
+def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, new_architecture,  is_last_epoch):
     """
     Validation Step after each epoch
     """
@@ -89,8 +97,16 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             images = images.to(device)
             masks = masks.to(device)
             out = model(images)
-            out = torch.sigmoid(out)
+            if new_architecture:
+                seg_out = out[:,1:,:,:]
+                out = torch.sigmoid(out[:, 0, :, :])
+            else:
+                out = torch.sigmoid(out)
             loss = loss_func(out, masks.unsqueeze(1))
+            
+            if new_architecture:
+                loss += 0.001*(images- seg_out).pow(2).mean()
+            
             loss_val += (loss / len(val_dataset))
 
             # Compute iou

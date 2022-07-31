@@ -11,14 +11,6 @@ import torch
 from torch.optim import Adam, lr_scheduler
 from torch.utils.data import random_split, DataLoader
 
-# from pickletools import optimize
-# import matplotlib.pyplot as plt
-# from torchvision.models.segmentation import fcn_resnet50
-# import pdb
-# import sys
-# import os
-# import torch.nn as nn
-
 torch.manual_seed(42)
 
 train_transform = Alb.Compose(
@@ -84,11 +76,14 @@ def main():
     parser.add_argument("-w", "--warmup_steps", type=int, default=0)
     parser.add_argument("-sp", "--save_path", type=str, default="./")
     parser.add_argument("-u", "--dataset_to_use", type=str, choices=["new", "old", "both"], default="old")
+    parser.add_argument("--new_architecture", action='store_true')
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     n_classes = args.num_classes
 
+    if args.new_architecture:
+        n_classes +=3
     # Set Model
     if args.model == "fcn_res":
         model = FCN_res(n_classes)
@@ -184,7 +179,7 @@ def main():
             wandb.init(project="cil-project-3", entity="cil-aaaa", name=run_name, group=args.loss,
                        config={"learning_rate": args.lr, "epochs": args.epochs, "batch_size": args.batch})
         train(model if not args.post_process else post_processing_model, train_dataloader, validation_dataloader, loss, optimizer, scheduler, device=device,
-              epochs=args.epochs, warmup=args.warmup_steps, wandb_log=args.wandb, model_name=run_name + ".pth",
+              epochs=args.epochs, new_architecture=args.new_architecture, warmup=args.warmup_steps, wandb_log=args.wandb, model_name=run_name + ".pth",
               save_path=args.save_path)
         if args.wandb:
             wandb.finish()
