@@ -23,7 +23,7 @@ def train(model, train_dataset, val_dataset, loss, optimizer, scheduler,
         train_epoch(model, train_dataset, optimizer, loss, device, epoch, wandb_log, new_architecture)
         print(f"Epoch {epoch} validation started.")
         is_last_epoch = epoch == epochs - 1
-        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log, is_last_epoch, new_architecture)
+        loss_val = val_epoch(model, val_dataset, loss, device, epoch, wandb_log,  new_architecture, is_last_epoch)
         if loss_val < loss_min:  # Model saved if min val loss obtained
             print("Model weights are saved.")
             loss_min = loss_val
