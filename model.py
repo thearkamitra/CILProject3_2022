@@ -2,7 +2,7 @@ import torch.nn as nn
 from torchvision.models.segmentation import fcn_resnet50, deeplabv3_resnet101
 from segmentation_models_pytorch import  Unet
 from models import deeplabv3, unet, segformer, resunet
-
+import pdb
 
 # import os
 # import pdb
@@ -16,15 +16,13 @@ from models import deeplabv3, unet, segformer, resunet
 class Baseline(nn.Module):
     def __init__(self, n_classes=1):
         super().__init__()
-        self.model = nn.Sequential(nn.Conv2d(3, 32, 3, padding='valid'),
+        self.model = nn.Sequential(nn.Conv2d(3, 32, 3, padding='same'),
                                    nn.ReLU(),
-                                   nn.Conv2d(3, 32, 3, padding='valid'),
+                                   nn.Conv2d(32, 64, 3, padding='same'),
                                    nn.ReLU(),
-                                   nn.Conv2d(32, 64, 3, padding='valid'),
+                                   nn.Conv2d(64, 32, 3, padding='same'),
                                    nn.ReLU(),
-                                   nn.Conv2d(64, 32, 3, padding='valid'),
-                                   nn.ReLU(),
-                                   nn.Conv2d(32, n_classes, 3, padding='valid'),
+                                   nn.Conv2d(32, n_classes, 3, padding='same'),
                                    )
 
     def forward(self, x):
