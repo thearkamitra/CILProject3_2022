@@ -135,7 +135,7 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
                 for n in range(out.shape[0]):
                     val = (remove_small_contours(pred[n,0], k) / 255.0).reshape(-1,1)
                     cont_removed_pred = np.concatenate((cont_removed_pred, val))
-                iou_conts_dict[k] = jaccard_score(cont_removed_pred, tar) / len(val_dataset)
+                iou_conts_dict[k] += jaccard_score(cont_removed_pred, tar) / len(val_dataset)
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
