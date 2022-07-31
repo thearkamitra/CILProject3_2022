@@ -181,7 +181,7 @@ def main():
     if args.cmd == "train":
         if args.wandb:
             wandb.init(
-                project="cil-project-3",
+                project="cil-project3_proper",
                 entity="cil-aaaa",
                 name=run_name,
                 group=args.loss,
