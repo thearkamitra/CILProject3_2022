@@ -118,6 +118,7 @@ def main():
     
     for idx, batch in enumerate(tqdm(validation_dataset)):
         images, masks = batch
+        print(images.shape)
         images = images.reshape([400,400,3])
         masks = masks.reshape([400,400,3])
         print(images.shape)
