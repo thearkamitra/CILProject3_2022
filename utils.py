@@ -245,7 +245,7 @@ def test(model1, model2, test_dataloader, device, post_proc, method="thres", thr
             # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
 
             image_rotl2 = torch.rot90(image, 1, [2,3])
-            out_rotl2 = get_output_from_image(model2, image_rotl)
+            out_rotl2 = get_output_from_image(model2, image_rotl2)
             out_rotl2 = torch.rot90(out_rotl2, -1, [0,1]).numpy()
 
             image_rotr2 = torch.rot90(image, -1, [2,3])
@@ -262,10 +262,13 @@ def test(model1, model2, test_dataloader, device, post_proc, method="thres", thr
             combined_out = np.mean(np.array([out1, out2]), (0))
 
             if post_proc is not None:
-              
+                
+
                 pred_pp = torch.from_numpy(combined_out)
                 pred_pp = pred_pp.unsqueeze(0).unsqueeze(0) # converts (400,400) to (1,1,400,400)
                 pred_pp = pred_pp.to(device)
+
+                out_normal = get_output_from_image(post_proc, pred_pp).numpy()
 
                 image_hflip = torch.flip(pred_pp,[3])
                 out_hflip = get_output_from_image(post_proc, image_hflip)
