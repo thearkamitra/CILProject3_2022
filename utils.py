@@ -105,12 +105,10 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     iou_thresholds = [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     ious = [0] * len(iou_thresholds)
     iou_dict = dict(zip(iou_thresholds, ious))
-    accuracy = 0
-    mAP = 0
-    f1_weighted_avg = 0
-    f1_avg = 0
     output_road_vals = np.array([])
     output_all_vals = np.array([])
+    stacked_tars = []
+    stacked_preds = []
     with torch.no_grad():
         for idx, batch in enumerate(tqdm(val_dataset)):
             images, masks = batch
@@ -121,7 +119,6 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
             loss = loss_func(out, masks.unsqueeze(1))
             loss_val += loss / len(val_dataset)
 
-            # Compute validation metrics: iou, mAP, f1, and accuracy
 
             # Compute iou
             tar = masks.cpu().numpy().reshape(-1, 1)
@@ -131,19 +128,8 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
 
             thresh = 0.7
             pred = np.where(out.cpu().numpy().reshape(-1, 1) >= thresh, 1, 0)
-
-            # Compute accuracy
-            accuracy += np.mean(pred == tar) / len(val_dataset)
-
-            # Compute mAP
-            mAP += average_precision_score(tar, pred) / len(val_dataset)
-
-            # Compute F1 Score simple average within image ('macro')
-            f1_avg += f1_score(tar, pred, average='macro') / len(val_dataset)
-
-            # Compute F1 Score weighted average within image. Weights based on number of samples of each class
-            f1_weighted_avg += f1_score(tar, pred, average='weighted') / len(val_dataset)
-
+            stacked_tars += tar
+            stacked_preds += pred
 
             if is_last_epoch:
                 shape = out.shape[0] * out.shape[1] * out.shape[2] * out.shape[3]
@@ -178,6 +164,18 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
                 )
 
     if wandb_log:
+        # Compute validation metrics: mAP, f1, and accuracy
+
+        # Compute accuracy
+        accuracy = np.mean(pred == tar)
+        # Compute mAP
+        mAP = average_precision_score(tar, pred)
+
+        # Compute F1 Score simple average within image ('macro')
+        f1_avg = f1_score(tar, pred, average='macro')
+
+        # Compute F1 Score weighted average within image. Weights based on number of samples of each class
+        f1_weighted_avg = f1_score(tar, pred, average='weighted')
         log_dict = {"validation loss": loss_val, "epoch": epoch, }
         for k, v in iou_dict.items():
             log_dict[f"val mIOU, threshold {k}"] = v
