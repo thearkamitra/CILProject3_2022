@@ -151,7 +151,7 @@ def main():
 
     model = model.to(device)
     if args.nn_post_proc_test_modeltoload != "":
-        post_processing_model = FCN_res(n_classes, n_layers=101, in_channels=1)
+        post_processing_model = FCN_res(n_classes, n_layers=101, in_channels=1, pretrained=False)
         post_processing_model = post_processing_model.to(device)
         post_processing_model.load_state_dict(torch.load(args.nn_post_proc_test_modeltoload, map_location=torch.device('cpu'))['model_state_dict'])
     # Load a model for add training, testing or validation
@@ -230,7 +230,7 @@ def main():
 
     elif args.cmd == "test":
         model = model.to(device)
-        test(model, test_dataloader, device, post_proc=args.nn_post_proc_test_modeltoload)
+        test(model, test_dataloader, device, post_proc=post_processing_model if args.nn_post_proc_test_modeltoload != "" else None)
 
     elif args.cmd == "valauroc":
         model = model.to(device)

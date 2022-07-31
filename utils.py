@@ -175,7 +175,7 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     return loss_val
 
 
-def test(model, test_dataloader, device, post_proc, method="thres", thres=0.7):
+def test(model, test_dataloader, device, post_proc, method="thres", thres=0.6):
     # Ensure folders are created:
     if not os.path.exists('test/predictions'):
         os.makedirs('test/predictions')
@@ -189,6 +189,7 @@ def test(model, test_dataloader, device, post_proc, method="thres", thres=0.7):
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
             image = image.to(device)
             out_normal = get_output_from_image(model, image).numpy()
+
             # plt.imsave("test/p1/" + fname[0], round_output(out_normal,method,thres), cmap='gray')
 
             image_hflip = torch.flip(image,[3])
@@ -211,19 +212,6 @@ def test(model, test_dataloader, device, post_proc, method="thres", thres=0.7):
 
             out = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
 
-            if post_proc != "":
-                transform = Alb.Compose(
-                    [
-                        ToTensorV2()
-                    ]
-                )
-                pred = transform(image=out)["image"].unsqueeze(0)
-                pred = pred.to(device)
-                score_pp = post_proc(pred)
-                out_pp = torch.reshape(torch.sigmoid(score_pp).cpu(), (400, 400)).numpy()
-                final = np.array(out_pp >= thres, dtype=out.dtype)
-                plt.imsave('test/predictions_post_proc/' + fname[0], final)
-
             out = round_output(out, method, thres)
 
             int_out = out.astype(np.uint8) * 255
@@ -232,8 +220,40 @@ def test(model, test_dataloader, device, post_proc, method="thres", thres=0.7):
             small_contour_removed_out = remove_small_contours(int_out)
             plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
 
+            if post_proc is not None:
+              
+                pred_pp = torch.from_numpy(out)
+                pred_pp = pred_pp.unsqueeze(0).unsqueeze(0) # converts (400,400) to (1,1,400,400)
+                pred_pp = pred_pp.to(device)
+
+                image_hflip = torch.flip(pred_pp,[3])
+                out_hflip = get_output_from_image(post_proc, image_hflip)
+                out_hflip = torch.flip(out_hflip, [1]).numpy()
+                # plt.imsave("test/p2/" + fname[0], round_output(out_hflip,method,thres), cmap='gray')
+
+                image_vflip = torch.flip(pred_pp,[2])
+                out_vflip = get_output_from_image(post_proc, image_vflip)
+                out_vflip = torch.flip(out_vflip, [0]).numpy()
+                # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
+
+                image_rotl = torch.rot90(pred_pp, 1, [2,3])
+                out_rotl = get_output_from_image(post_proc, image_rotl)
+                out_rotl = torch.rot90(out_rotl, -1, [0,1]).numpy()
+
+                image_rotr = torch.rot90(pred_pp, -1, [2,3])
+                out_rotr = get_output_from_image(post_proc, image_rotr)
+                out_rotr = torch.rot90(out_rotr, 1, [0,1]).numpy()
+
+                combined_pp = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
+
+                combined_pp_rounded = round_output(combined_pp, method, thres)
 
 
+                # out_pp = get_output_from_image(post_proc, pred_pp).numpy()
+                # out_pp_rounded = round_output(out_pp, method, thres)
+
+                int_out_pp = combined_pp_rounded.astype(np.uint8) * 255
+                plt.imsave("test/predictions_post_proc/" + fname[0], int_out_pp, cmap='gray')
 
 
 
