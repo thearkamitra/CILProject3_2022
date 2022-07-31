@@ -121,10 +121,6 @@ def main():
         images, masks = batch
         images = np.array(images)
         masks = np.array(masks)
-        print(images.shape)
-        print(images[0])
-        images = np.swapaxes(images, 0,2)
-        print(images.shape)
         plt.imsave('/content/drive/MyDrive/CIL/val/images/image_'+ str(idx) + '.png', images)
         plt.imsave('/content/drive/MyDrive/CIL/val/masks/mask_'+ str(idx) + '.png', masks)
     
