@@ -112,6 +112,12 @@ def main():
     validation_dataloader = DataLoader(
         validation_dataset, batch_size=batch_size, shuffle=False
     )
+    
+    for idx, batch in enumerate(tqdm(validation_dataset)):
+        images, masks = batch
+        plt.imsave('image_'+ str(idx) + '.png', images)
+        plt.imsave('mask_'+ str(idx) + '.png', masks)
+    
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     n_classes = args.num_classes
 
