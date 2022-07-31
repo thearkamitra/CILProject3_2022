@@ -10,6 +10,7 @@ import time
 import torch
 from torch.optim import Adam, lr_scheduler
 from torch.utils.data import random_split, DataLoader
+import tqdm
 
 torch.manual_seed(42)
 
