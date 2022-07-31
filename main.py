@@ -100,7 +100,7 @@ def main():
     dataset = RoadCIL(
         "massachusetts-road-dataset" if args.pretrain else "training",
         training=True,
-        transform=train_transform,
+        transform=None,
         use=args.dataset_to_use,
     )
     test_dataset = RoadCIL(
