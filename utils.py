@@ -175,54 +175,95 @@ def val_epoch(model, val_dataset, loss_func, device, epoch, wandb_log, is_last_e
     return loss_val
 
 
-def test(model, test_dataloader, device, post_proc, method="thres", thres=0.6):
+def test(model1, model2, test_dataloader, device, post_proc, method="thres", thres=0.6):
     # Ensure folders are created:
     if not os.path.exists('test/predictions'):
         os.makedirs('test/predictions')
+    if not os.path.exists('test/predictionsmodel2'):
+        os.makedirs('test/predictionsmodel2')
     if not os.path.exists('test/predictions_cont'):
         os.makedirs('test/predictions_cont')
     if not os.path.exists('test/predictions_post_proc'):
         os.makedirs('test/predictions_post_proc')
 
-    model.eval()
+    model1.eval()
+    model2.eval()
     with torch.no_grad():
         for _idx, (fname, image) in enumerate(tqdm(test_dataloader)):
             image = image.to(device)
-            out_normal = get_output_from_image(model, image).numpy()
+
+
+            # Model 1 TTA
+
+            out_normal1 = get_output_from_image(model1, image).numpy()
 
             # plt.imsave("test/p1/" + fname[0], round_output(out_normal,method,thres), cmap='gray')
 
-            image_hflip = torch.flip(image,[3])
-            out_hflip = get_output_from_image(model, image_hflip)
-            out_hflip = torch.flip(out_hflip, [1]).numpy()
+            image_hflip1 = torch.flip(image,[3])
+            out_hflip1 = get_output_from_image(model1, image_hflip1)
+            out_hflip1 = torch.flip(out_hflip1, [1]).numpy()
             # plt.imsave("test/p2/" + fname[0], round_output(out_hflip,method,thres), cmap='gray')
 
-            image_vflip = torch.flip(image,[2])
-            out_vflip = get_output_from_image(model, image_vflip)
-            out_vflip = torch.flip(out_vflip, [0]).numpy()
+            image_vflip1 = torch.flip(image,[2])
+            out_vflip1 = get_output_from_image(model1, image_vflip1)
+            out_vflip1 = torch.flip(out_vflip1, [0]).numpy()
             # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
 
-            image_rotl = torch.rot90(image, 1, [2,3])
-            out_rotl = get_output_from_image(model, image_rotl)
-            out_rotl = torch.rot90(out_rotl, -1, [0,1]).numpy()
+            image_rotl1 = torch.rot90(image, 1, [2,3])
+            out_rotl1 = get_output_from_image(model1, image_rotl1)
+            out_rotl1 = torch.rot90(out_rotl1, -1, [0,1]).numpy()
 
-            image_rotr = torch.rot90(image, -1, [2,3])
-            out_rotr = get_output_from_image(model, image_rotr)
-            out_rotr = torch.rot90(out_rotr, 1, [0,1]).numpy()
+            image_rotr1 = torch.rot90(image, -1, [2,3])
+            out_rotr1 = get_output_from_image(model1, image_rotr1)
+            out_rotr1 = torch.rot90(out_rotr1, 1, [0,1]).numpy()
 
-            out = np.mean(np.array([out_normal, out_hflip, out_vflip, out_rotl, out_rotr]), (0))
+            out1 = np.mean(np.array([out_normal1, out_hflip1, out_vflip1, out_rotl1, out_rotr1]), (0))
 
-            out = round_output(out, method, thres)
+            out1 = round_output(out1, method, thres)
 
-            int_out = out.astype(np.uint8) * 255
-            plt.imsave("test/predictions/" + fname[0], int_out, cmap='gray')
+            int_out1 = out1.astype(np.uint8) * 255
+            plt.imsave("test/predictions/" + fname[0], int_out1, cmap='gray')
             
-            small_contour_removed_out = remove_small_contours(int_out)
+            small_contour_removed_out = remove_small_contours(int_out1)
             plt.imsave("test/predictions_cont/" + fname[0], small_contour_removed_out, cmap='gray')
+
+
+            # Model 2 TTA
+
+            out_normal2 = get_output_from_image(model2, image).numpy()
+
+            # plt.imsave("test/p1/" + fname[0], round_output(out_normal,method,thres), cmap='gray')
+
+            image_hflip2 = torch.flip(image,[3])
+            out_hflip2 = get_output_from_image(model2, image_hflip2)
+            out_hflip2 = torch.flip(out_hflip2, [1]).numpy()
+            # plt.imsave("test/p2/" + fname[0], round_output(out_hflip,method,thres), cmap='gray')
+
+            image_vflip2 = torch.flip(image,[2])
+            out_vflip2 = get_output_from_image(model2, image_vflip2)
+            out_vflip2 = torch.flip(out_vflip2, [0]).numpy()
+            # plt.imsave("test/p3/" + fname[0], round_output(out_vflip,method,thres), cmap='gray')
+
+            image_rotl2 = torch.rot90(image, 1, [2,3])
+            out_rotl2 = get_output_from_image(model2, image_rotl)
+            out_rotl2 = torch.rot90(out_rotl2, -1, [0,1]).numpy()
+
+            image_rotr2 = torch.rot90(image, -1, [2,3])
+            out_rotr2 = get_output_from_image(model2, image_rotr2)
+            out_rotr2 = torch.rot90(out_rotr2, 1, [0,1]).numpy()
+
+            out2 = np.mean(np.array([out_normal2, out_hflip2, out_vflip2, out_rotl2, out_rotr2]), (0))
+
+            out2 = round_output(out2, method, thres)
+
+            int_out2 = out2.astype(np.uint8) * 255
+            plt.imsave("test/predictionsmodel2/" + fname[0], int_out2, cmap='gray')
+
+            combined_out = np.mean(np.array([out1, out2]), (0))
 
             if post_proc is not None:
               
-                pred_pp = torch.from_numpy(out)
+                pred_pp = torch.from_numpy(combined_out)
                 pred_pp = pred_pp.unsqueeze(0).unsqueeze(0) # converts (400,400) to (1,1,400,400)
                 pred_pp = pred_pp.to(device)
 

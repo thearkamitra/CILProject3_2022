@@ -51,6 +51,7 @@ def _parse_args():
     )
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("-p", "--modeltoload", type=str, default="")
+    parser.add_argument("-p2", "--model2toload", type=str, default="")
     parser.add_argument("-nnpp", "--nn_post_proc_test_modeltoload", type=str, default="")
     parser.add_argument(
         "--model",
@@ -67,6 +68,8 @@ def _parse_args():
             "unetsmp",
         ],
     )
+    parser.add_argument("--model2", type=str, default="fcn_res",
+                        choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
     parser.add_argument("--wandb", action="store_true")
     parser.add_argument("--pretrain", action="store_true")
     parser.add_argument(
@@ -150,8 +153,11 @@ def main():
         model = UNetSMP(n_classes, decoder_attention=False)
 
     model = model.to(device)
+    model2 = FCN_res(n_classes)
+    model2 = model2.to(device)
+
     if args.nn_post_proc_test_modeltoload != "":
-        post_processing_model = FCN_res(n_classes, n_layers=101, in_channels=1, pretrained=False)
+        post_processing_model = FCN_res(n_classes, n_layers=101, in_channels=1, pretrained=True)
         post_processing_model = post_processing_model.to(device)
         post_processing_model.load_state_dict(torch.load(args.nn_post_proc_test_modeltoload, map_location=torch.device('cpu'))['model_state_dict'])
     # Load a model for add training, testing or validation
@@ -159,6 +165,13 @@ def main():
         model.load_state_dict(
             torch.load(args.modeltoload, map_location=torch.device("cpu"))[
                 "model_state_dict"
+            ]
+        )
+    
+    if args.model2toload != "":
+        model2.load_state_dict(
+          torch.load(args.model2toload, map_location=torch.device('cpu'))[
+            'model_state_dict'
             ]
         )
 
@@ -230,7 +243,7 @@ def main():
 
     elif args.cmd == "test":
         model = model.to(device)
-        test(model, test_dataloader, device, post_proc=post_processing_model if args.nn_post_proc_test_modeltoload != "" else None)
+        test(model, model2, test_dataloader, device, post_proc=post_processing_model if args.nn_post_proc_test_modeltoload != "" else None)
 
     elif args.cmd == "valauroc":
         model = model.to(device)
