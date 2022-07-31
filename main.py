@@ -71,6 +71,7 @@ def main():
     parser.add_argument("--run_name_prefix", type=str, default="")
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("-p", "--modeltoload", type=str, default="")
+    parser.add_argument("-p2", "--model2toload", type=str, default="")
     parser.add_argument("--post_processing_modeltoload", type=str, default="")
     parser.add_argument("--model", type=str, default="fcn_res",
                         choices=["fcn_res", "baseline", "unet", "deeplabv3", "segformer", "resunet", "deeplabv3_resnet101", "unetsmp"])
@@ -134,8 +135,13 @@ def main():
     # Load a model for add training, testing or validation
     if args.modeltoload != "":
         model.load_state_dict(torch.load(args.modeltoload, map_location=torch.device('cpu'))['model_state_dict'])
+        print(f"Loaded model 1: {args.modeltoload}")
+    if args.model2toload != "":
+        model2.load_state_dict(torch.load(args.model2toload, map_location=torch.device('cpu'))['model_state_dict'])
+        print(f"Loaded model 2: {args.model2toload}")
     if args.post_processing_modeltoload != "":
         post_processing_model.load_state_dict(torch.load(args.post_processing_modeltoload, map_location=torch.device('cpu'))['model_state_dict'])
+        print(f"Loaded post_proc model: {args.post_processing_modeltoload}")
 
     # Create dataset
     batch_size = args.batch
