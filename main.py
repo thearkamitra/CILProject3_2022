@@ -157,7 +157,7 @@ def main():
     model2 = model2.to(device)
 
     if args.nn_post_proc_test_modeltoload != "":
-        post_processing_model = FCN_res(n_classes, n_layers=101, in_channels=1, pretrained=True)
+        post_processing_model = FCN_res(n_classes, n_layers=50, in_channels=1, pretrained=True)
         post_processing_model = post_processing_model.to(device)
         post_processing_model.load_state_dict(torch.load(args.nn_post_proc_test_modeltoload, map_location=torch.device('cpu'))['model_state_dict'])
     # Load a model for add training, testing or validation

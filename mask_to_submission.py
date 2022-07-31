@@ -4,7 +4,7 @@ import os
 import numpy as np
 import matplotlib.image as mpimg
 import re
-import PIL
+from PIL import Image
 
 from absl import app, flags
 
@@ -12,11 +12,11 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
     "submission_filename",
-    "submissions/test_sub_3.csv",
+    "submissions/test_sub_postproc.csv",
     "The output csv for the submission.",
 )
 flags.DEFINE_string(
-    "base_dir", "test/predictions", "The directory with the predicted masks."
+    "base_dir", "test/predictions_post_proc", "The directory with the predicted masks."
 )
 
 foreground_threshold = 0.25  # percentage of pixels of val 255 required to assign a foreground label to a patch
@@ -37,7 +37,7 @@ def mask_to_submission_strings(image_filename, mask_dir=None):
 
     """Reads a single image and outputs the strings that should go into the submission file"""
     img_number = int(re.search(r"\d+", image_filename).group(0))
-    im = PIL.Image.open(image_filename)
+    im = Image.open(image_filename)
     im_arr = np.asarray(im)
     if len(im_arr.shape) > 2:
         # Convert to grayscale.
